@@ -45,7 +45,9 @@ pnpm dev
 ```text
 siftline start [--mode conservative|aggressive]
 siftline bench
+siftline analyze <traces.jsonl>
 siftline explain <trace.json>
+siftline report
 siftline doctor
 ```
 

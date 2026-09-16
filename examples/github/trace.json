@@ -1,0 +1,7 @@
+{
+  "id": "trace_issue_demo",
+  "task": "Show issue title and state",
+  "tool": { "name": "github.searchIssues", "kind": "READ", "readOnly": true },
+  "request": { "query": "query Issues { issues { number title state labels avatarUrl } }" },
+  "timestamp": "2026-09-15T00:00:00.000Z"
+}
