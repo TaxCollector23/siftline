@@ -1,21 +1,24 @@
 # Siftline
 
-Make agents fetch less.
+A hosted request optimizer for read-only agent tools.
 
 ```bash
-npx siftline@latest start
+npx siftline@latest login
+siftline connect codex
 ```
 
-Siftline is a conservative query optimizer for AI tool calls. It narrows read-only requests before they reach a database or API, so the source returns less data in the first place. It is not prompt compression, context summarization, or model routing.
+Siftline sits between an agent and a read-only database/API tool. It rewrites broad SQL and GraphQL-style requests before execution so the source returns fewer rows and fields to the model. It is not prompt compression, context summarization, model routing, or a magic wrapper around every tool already installed in a coding agent.
+
+For custom agents, call `POST /api/v1/optimize` immediately before executing the tool request. For Codex, `siftline connect codex` registers an MCP tool that the agent can call before a broad read. See [the API contract](docs/api.md) and [the Codex setup](docs/codex.md).
 
 ## Before / after
 
 ```sql
 SELECT * FROM orders;
 
-SELECT id, status, total, customer_name, error, created_at
+SELECT id, status, created_at
 FROM orders
-WHERE status = 'failed' AND customer_tier = 'enterprise'
+WHERE status = 'failed'
 ORDER BY created_at DESC
 LIMIT 5;
 ```
@@ -24,7 +27,7 @@ LIMIT 5;
 
 Run `pnpm benchmark` to regenerate [`benchmarks/results/latest.json`](benchmarks/results/latest.json) and [`benchmarks/results/latest.md`](benchmarks/results/latest.md). The landing page loads the generated JSON; it does not contain hand-entered marketing numbers.
 
-The deterministic run uses 120 synthetic tasks and reports estimated cost, returned bytes, model-facing tokens, task-success delta, p50/p90/p95 latency, unchanged controls, fallbacks, and unsafe rewrites.
+The deterministic run uses 120 synthetic tasks and reports estimated fixture cost, returned bytes, approximate model-facing tokens, task-success delta, optimized calls, and unchanged controls. The current 65.8% result is not measured provider billing and does not promise more ChatGPT/Codex subscription usage.
 
 ## Develop
 
@@ -38,12 +41,17 @@ pnpm build
 pnpm dev
 ```
 
-`pnpm dev` runs the Vite site. `npx siftline start` runs the local proxy on `4318` and the built dashboard on `4317`.
+`pnpm dev` runs the Vite site. `siftline start` remains available for local development; the intended user path is the hosted API plus the CLI credential and MCP connection.
 
 ## CLI
 
 ```text
-siftline start [--mode conservative|aggressive]
+siftline login
+siftline logout
+siftline status
+siftline connect codex
+siftline mcp
+siftline start
 siftline bench
 siftline analyze <traces.jsonl>
 siftline explain <trace.json>
@@ -62,6 +70,8 @@ Writes and unknown tools pass through unchanged. SQL is parsed into a small AST 
 
 ```text
 apps/web             landing page, playground, benchmark methodology
+api                  Vercel API routes for auth, keys, quotas, optimization
+packages/api         API-key security and rate-limit primitives
 packages/core        types, SQL AST, optimization passes, accounting
 packages/cli         local proxy, dashboard server, CLI commands
 benchmarks/results   generated JSON + Markdown artifacts

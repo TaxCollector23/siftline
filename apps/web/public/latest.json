@@ -1,6 +1,11 @@
 {
-  "version": "0.1.0",
-  "generatedAt": "2026-09-16T03:11:02.859Z",
+  "version": "0.2.0",
+  "measurementType": "synthetic_estimate",
+  "limitations": [
+    "Fixture bytes and task outcomes are deterministic simulations, not provider telemetry.",
+    "Estimated cost reduction does not prove lower billing or increased subscription usage."
+  ],
+  "generatedAt": "2026-09-16T03:50:50.249Z",
   "sampleCount": 120,
   "categories": [
     "sql",
@@ -9,24 +14,16 @@
     "control",
     "already-optimal"
   ],
-  "costReductionPercent": 65.8,
-  "toolTokenReductionPercent": 65.8,
-  "dataReductionPercent": 65.8,
+  "costReductionPercent": 65.6,
+  "toolTokenReductionPercent": 65.6,
+  "dataReductionPercent": 65.6,
   "baselinePassed": 115,
   "optimizedPassed": 115,
   "taskSuccessBaseline": 95.8,
   "taskSuccessOptimized": 95.8,
   "taskSuccessDelta": 0,
-  "medianLatencyChangePercent": -12.4,
-  "callsOptimized": 96,
-  "correctlyUnchanged": 24,
-  "unsafeRewrites": 0,
-  "fallbacks": 0,
-  "latencyMs": {
-    "p50": 81.33333333333333,
-    "p90": 221.91666666666666,
-    "p95": 228.75
-  },
+  "callsOptimized": 72,
+  "correctlyUnchanged": 48,
   "pricing": {
     "model": "illustrative",
     "inputPerMillion": 3,

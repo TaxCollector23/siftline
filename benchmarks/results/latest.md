@@ -1,18 +1,18 @@
 # Siftline benchmark
 
-Generated from 120 deterministic tasks across sql, issues, logs, control, already-optimal.
+Generated from 120 deterministic tasks across sql, issues, logs, control, already-optimal. This is a synthetic estimate, not provider telemetry.
 
 | Measure | Baseline | Siftline | Change |
 | --- | ---: | ---: | ---: |
-| Estimated cost | $0.5032 | $0.1720 | **-65.8%** |
-| Tool-result tokens | 119,806 | 40,944 | **-65.8%** |
-| Returned bytes | 443,277 | 151,479 | **-65.8%** |
-| Task success | 115/120 | 115/120 | **0pp** |
+| Estimated cost | $0.5032 | $0.1730 | **-65.6%** |
+| Approximate tool-result tokens | 119,806 | 41,188 | **-65.6%** |
+| Simulated returned bytes | 443,277 | 152,397 | **-65.6%** |
+| Deterministic fixture success | 115/120 | 115/120 | **0pp** |
 
 ## Quality gate
 
-PASS: the headline is publishable only when task-success delta is at least -1.0pp.
+PASS: the benchmark is publishable only when fixture task-success delta is at least -1.0pp.
 
-## Method
+## Method and limits
 
-Baseline uses the broad fixture request. Siftline applies conservative source-side narrowing. Costs are estimated using the configurable illustrative pricing table (3/M input tokens, 15/M output tokens). The suite includes controls where optimization should not apply.
+Baseline uses the broad fixture request. Siftline applies conservative source-side narrowing. Costs are estimated using an illustrative pricing table (3/M input tokens, 15/M output tokens). The suite includes controls where optimization should not apply. It does not prove lower provider billing or increased subscription usage; that requires instrumented production traffic and before/after provider usage.

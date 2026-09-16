@@ -1,0 +1,11 @@
+{
+  "installCommand": "pnpm install --frozen-lockfile",
+  "devCommand": "pnpm --dir apps/web exec vite --host 127.0.0.1 --port $PORT",
+  "buildCommand": "pnpm --dir apps/web build",
+  "outputDirectory": "apps/web/dist",
+  "rewrites": [
+    { "source": "/account", "destination": "/index.html" },
+    { "source": "/benchmarks", "destination": "/index.html" }
+  ],
+  "functions": { "api/**/*.ts": { "maxDuration": 10 } }
+}

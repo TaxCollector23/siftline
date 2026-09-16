@@ -2,4 +2,6 @@ packages:
   - apps/*
   - packages/*
 allowBuilds:
-  esbuild: set this to true or false
+  '@firebase/util': true
+  esbuild: true
+  protobufjs: true

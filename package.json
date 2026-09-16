@@ -1,6 +1,6 @@
 {
   "name": "siftline",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Conservative query optimization for AI tool calls.",
   "type": "module",
   "bin": { "siftline": "dist/cli/index.js" },
@@ -11,7 +11,7 @@
     "build:core": "tsup packages/core/src/index.ts --format esm --dts --out-dir dist/core",
     "build:cli": "tsup --config packages/cli/tsup.config.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint packages apps scripts --ext .ts,.tsx",
+    "lint": "eslint packages apps api scripts --ext .ts,.tsx",
     "test": "vitest run",
     "benchmark": "tsx scripts/benchmark.ts",
     "benchmark:watch": "tsx scripts/benchmark.ts --watch",
