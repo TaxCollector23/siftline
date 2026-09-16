@@ -1,0 +1,4 @@
+{
+  "compilerOptions": { "target": "ES2022", "module": "ESNext", "moduleResolution": "Bundler", "strict": true, "noUncheckedIndexedAccess": true, "skipLibCheck": true, "jsx": "react-jsx", "types": ["node", "vite/client"], "baseUrl": ".", "paths": { "@siftline/core": ["packages/core/src/index.ts"] } },
+  "include": ["packages", "apps", "scripts", "vite.config.ts", "eslint.config.js"]
+}

@@ -1,0 +1,8 @@
+{
+  "id": "trace_demo_orders",
+  "task": "Find the five most recent failed enterprise orders and show customer name, total and error",
+  "tool": { "name": "database.query", "kind": "READ", "readOnly": true },
+  "request": { "query": "SELECT * FROM orders" },
+  "usage": { "inputTokens": 0, "outputTokens": 0 },
+  "timestamp": "2026-09-15T00:00:00.000Z"
+}

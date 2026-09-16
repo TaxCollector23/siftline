@@ -1,0 +1,35 @@
+{
+  "version": "0.1.0",
+  "generatedAt": "2026-09-16T03:05:05.259Z",
+  "sampleCount": 120,
+  "categories": [
+    "sql",
+    "issues",
+    "logs",
+    "control",
+    "already-optimal"
+  ],
+  "costReductionPercent": 65.8,
+  "toolTokenReductionPercent": 65.8,
+  "dataReductionPercent": 65.8,
+  "baselinePassed": 115,
+  "optimizedPassed": 115,
+  "taskSuccessBaseline": 95.8,
+  "taskSuccessOptimized": 95.8,
+  "taskSuccessDelta": 0,
+  "medianLatencyChangePercent": -12.4,
+  "callsOptimized": 96,
+  "correctlyUnchanged": 24,
+  "unsafeRewrites": 0,
+  "fallbacks": 0,
+  "latencyMs": {
+    "p50": 81.33333333333333,
+    "p90": 221.91666666666666,
+    "p95": 228.75
+  },
+  "pricing": {
+    "model": "illustrative",
+    "inputPerMillion": 3,
+    "outputPerMillion": 15
+  }
+}
