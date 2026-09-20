@@ -1,18 +1,18 @@
 # Connect Codex
 
-Official Codex clients support local STDIO MCP servers. Siftline uses that connection as an explicit request optimizer.
+Codex supports local STDIO MCP servers. Cutdex uses that connection as an explicit request optimizer.
 
 ```bash
-npx siftline@latest login
-siftline connect codex
+npx cutdex@latest login
+cutdex connect codex
 ```
 
 The second command registers:
 
 ```bash
-codex mcp add siftline -- npx -y siftline@latest mcp
+codex mcp add cutdex -- npx -y cutdex@latest mcp
 ```
 
-Restart Codex and run `/mcp` to verify the server. Before a broad read-only SQL or GraphQL-style call, Codex can call `siftline_optimize`, then execute the returned `optimizedRequest` with the original source tool.
+Restart Codex and run `/mcp` to verify the server. Before a broad read-only SQL or GraphQL-style call, Codex can call `cutdex_optimize`, then execute the returned `optimizedRequest` with the original source tool. The MCP response is intentionally compact: it omits the unchanged original request and returns only the optimized request plus the passes that justify it.
 
-Important boundary: MCP adds a tool. It does not silently intercept Codex's built-in shell, browser, filesystem, or other MCP servers. Automatic interception requires an application-level middleware adapter around the actual tool executor.
+Important boundary: MCP adds a tool. It does not silently intercept Codex's built-in shell, browser, filesystem, or other MCP servers. Automatic interception requires an application-level middleware adapter around the actual tool executor. Without a hosted key, `cutdex mcp` runs the same optimizer locally, so the integration is useful in development without an account.

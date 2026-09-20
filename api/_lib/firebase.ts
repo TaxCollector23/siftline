@@ -58,7 +58,7 @@ async function rollback(transaction: string): Promise<void> {
 }
 
 export async function authorizeApiKey(value: string): Promise<AuthorizedKey> {
-  const devKeys = (process.env.SIFTLINE_DEV_API_KEYS ?? "").split(",").map((key) => key.trim()).filter(Boolean);
+  const devKeys = (process.env.CUTDEX_DEV_API_KEYS ?? "").split(",").map((key) => key.trim()).filter(Boolean);
   if (devKeys.includes(value)) {
     const rate = consumeRateLimit(devUsage.get(value) ?? {});
     if (!rate.allowed) throw Object.assign(new Error("Rate limit exceeded"), { statusCode: 429, rate });
@@ -66,7 +66,7 @@ export async function authorizeApiKey(value: string): Promise<AuthorizedKey> {
     return { id: "dev", userId: "development", name: "Development key", lastFour: value.slice(-4), rate };
   }
   const parsed = parseApiKey(value); if (!parsed) throw Object.assign(new Error("Invalid API key"), { statusCode: 401 });
-  const pepper = required("SIFTLINE_KEY_PEPPER");
+  const pepper = required("CUTDEX_KEY_PEPPER");
   const begin = await firebaseFetch(`https://firestore.googleapis.com/v1/projects/${projectId()}/databases/(default)/documents:beginTransaction`, { method: "POST", body: JSON.stringify({ options: { readWrite: {} } }) });
   if (!begin.ok) throw new Error("Could not start rate-limit transaction");
   const { transaction } = await begin.json() as { transaction: string };

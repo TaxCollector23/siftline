@@ -1,11 +1,11 @@
 {
-  "version": "0.2.0",
+  "version": "0.3.0",
   "measurementType": "synthetic_estimate",
   "limitations": [
     "Fixture bytes and task outcomes are deterministic simulations, not provider telemetry.",
     "Estimated cost reduction does not prove lower billing or increased subscription usage."
   ],
-  "generatedAt": "2026-09-16T03:50:50.249Z",
+  "generatedAt": "2026-09-20T02:35:14.468Z",
   "sampleCount": 120,
   "categories": [
     "sql",

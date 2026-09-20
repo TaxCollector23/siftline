@@ -1,10 +1,10 @@
 # Hosted API
 
-Siftline is designed to run as middleware immediately before a read-only tool call. It returns an optimized request; the caller remains responsible for executing that request against its database, API, or MCP tool.
+Cutdex is designed to run as middleware immediately before a read-only tool call. It returns an optimized request; the caller remains responsible for executing that request against its database, API, or MCP tool.
 
 ## Authentication
 
-Send a Siftline API key as a bearer token:
+Send a Cutdex API key as a bearer token:
 
 ```http
 Authorization: Bearer sift_live_...
@@ -36,7 +36,7 @@ The response includes `originalRequest`, `optimizedRequest`, independent applied
 - `GET /api/v1/keys` lists key metadata for a Firebase-authenticated user.
 - `POST /api/v1/keys` creates a key and returns the secret once.
 - `DELETE /api/v1/keys?id=...` revokes a key.
-- `GET /api/v1/auth/verify` validates a Siftline key and returns quota information.
+- `GET /api/v1/auth/verify` validates a Cutdex key and returns quota information.
 - `GET /api/v1/health` reports service readiness without exposing credentials.
 
 The account endpoints require a Firebase ID token. Firestore should deny direct client access; the server uses a service account.

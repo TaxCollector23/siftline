@@ -65,7 +65,7 @@ importers:
 
   apps/web:
     dependencies:
-      '@siftline/core':
+      '@cutdex/core':
         specifier: workspace:*
         version: link:../../packages/core
       firebase:
@@ -82,7 +82,7 @@ importers:
 
   packages/cli:
     dependencies:
-      '@siftline/core':
+      '@cutdex/core':
         specifier: workspace:*
         version: link:../core
 

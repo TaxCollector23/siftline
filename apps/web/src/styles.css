@@ -45,6 +45,7 @@ nav a:hover, a:hover { color: var(--orange); }
 }
 .hero-copy-block > p, .hero-copy { font-size: 20px; line-height: 1.5; color: #46473f; max-width: 650px; }
 .hero-copy-block > p strong { color: var(--ink); font-weight: 600; }
+.hero h1 strong { color: var(--orange); font-weight: 600; }
 .hero-links {
   display: flex;
   align-items: center;
