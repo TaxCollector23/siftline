@@ -3,7 +3,7 @@
 A hosted request optimizer for read-only agent tools.
 
 ```bash
-npx cutdex@latest login
+cutdex login
 cutdex connect codex
 ```
 
@@ -27,7 +27,9 @@ LIMIT 5;
 
 Run `pnpm benchmark` to regenerate [`benchmarks/results/latest.json`](benchmarks/results/latest.json) and [`benchmarks/results/latest.md`](benchmarks/results/latest.md). The landing page loads the generated JSON; it does not contain hand-entered marketing numbers.
 
-The deterministic run uses 120 synthetic tasks and reports fixture bytes, approximate model-facing tokens, task-success delta, optimization latency, per-case requests, optimized calls, and unchanged controls. The current 81.3% result is a local fixture measurement—not provider billing—and does not promise more ChatGPT/Codex subscription usage.
+The deterministic run uses 120 synthetic tasks and reports fixture bytes, approximate request-plus-result context, task-success delta, optimization latency, per-case requests, optimized calls, and unchanged controls. The current 81.3% tool-result and 81.2% request-plus-result context figures are local fixture measurements—not provider billing—and do not promise more ChatGPT/Codex subscription usage.
+
+The npm package is not published yet. From this repository, run `pnpm build`, then use `node dist/cli/index.js login` and `node dist/cli/index.js connect codex`; the connector registers the exact built CLI path with Codex.
 
 `pnpm benchmark:real` measures the configured HTTP optimizer path against a small live request set. It uses `CUTDEX_BENCHMARK_API_URL` (default `http://localhost:4318/optimize`) and optional `CUTDEX_API_KEY`, writes `benchmarks/results/real-latest.json`, and never calls a source database or fabricates provider billing.
 

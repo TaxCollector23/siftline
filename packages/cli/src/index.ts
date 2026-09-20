@@ -131,13 +131,23 @@ async function status(): Promise<void> {
   console.log(`API         ${config.apiUrl}\nCredential  ${result.key.name} (…${result.key.lastFour})\nMinute left ${result.limits?.remainingMinute ?? "unknown"}\nMonth left  ${result.limits?.remainingMonth ?? "unknown"}`);
 }
 
+function mcpLauncher(): { command: string; args: string[]; display: string } {
+  const entry = resolve(fileURLToPath(import.meta.url));
+  if (!entry.toLowerCase().endsWith(".js")) throw new Error("Build the CLI before connecting Codex: run `pnpm build:cli`, then retry with the built CLI.");
+  const args = [entry, "mcp"];
+  const quote = (value: string) => /\s/.test(value) ? `"${value}"` : value;
+  return { command: process.execPath, args, display: [process.execPath, ...args].map(quote).join(" ") };
+}
+
 function connect(agent: string | undefined): void {
   if (agent !== "codex") throw new Error("v0.3 supports `cutdex connect codex`. More adapters will follow the stable proxy contract.");
   const mode = readConfig().apiKey ? "hosted API" : "local optimizer";
   const home = codexHome();
-  const command = "codex mcp add cutdex -- npx -y cutdex@latest mcp";
+  const launcher = mcpLauncher();
+  const command = `codex mcp add ${cutdexMcpName} -- ${launcher.display}`;
   if (process.env.CUTDEX_CONNECT_DRY_RUN === "1") { console.log(`${command}\nMode: ${mode}\nCODEX_HOME: ${home}\nAGENTS: ${agentsPath(home)}`); return }
-  const result = spawnSync("codex", ["mcp", "add", cutdexMcpName, "--", "npx", "-y", "cutdex@latest", "mcp"], { stdio: "inherit", env: { ...process.env, CODEX_HOME: home }, windowsHide: true });
+  if (!codexInstalled(home)) throw new Error("Codex CLI was not found. Install Codex or put `codex` on PATH, then retry.");
+  const result = spawnSync("codex", ["mcp", "add", cutdexMcpName, "--", launcher.command, ...launcher.args], { stdio: "inherit", env: { ...process.env, CODEX_HOME: home }, windowsHide: true });
   if (result.error || result.status !== 0) { console.log(`Run this command manually:\n${command}`); throw new Error("Codex MCP registration did not complete. Check that the Codex CLI is installed and that CODEX_HOME is writable.") }
   try { installCutdexInstructions(agentsPath(home)) }
   catch (error) {

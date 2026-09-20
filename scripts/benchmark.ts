@@ -1,7 +1,7 @@
 import { copyFile, mkdir, writeFile } from "node:fs/promises";
 import { performance } from "node:perf_hooks";
 import { resolve } from "node:path";
-import { costForTokens, optimizeToolCall, parseGraphql, parseSelect, type OptimizationResult } from "../packages/core/src/index.js";
+import { optimizeToolCall, parseGraphql, parseSelect, type OptimizationResult } from "../packages/core/src/index.js";
 
 type Definition = {
   id: string;
@@ -41,6 +41,10 @@ function payloadBytes(fields: string[], rows: number): number {
   return Buffer.byteLength(`[${Array.from({ length: rows }, () => sample).join(",")}]`, "utf8");
 }
 
+function approximateTokens(value: unknown): number {
+  return Math.max(1, Math.ceil(Buffer.byteLength(JSON.stringify(value), "utf8") / 4));
+}
+
 function selectedFieldCount(query: string, fallback: number): number {
   const sql = parseSelect(query);
   if (sql) return sql.columns.includes("*") ? fallback : sql.columns.length;
@@ -74,6 +78,8 @@ function caseResult(definition: Definition) {
   const optimizedBytes = result.applied.length ? payloadBytes(definition.fields.slice(0, optimizedFields), optimizedRows) : baselineBytes;
   const baselineTokens = Math.max(1, Math.ceil(baselineBytes / 4));
   const optimizedTokens = Math.max(1, Math.ceil(optimizedBytes / 4));
+  const baselineRequestTokens = approximateTokens({ task: definition.task, tool: input.tool, request: input.request });
+  const optimizedRequestTokens = approximateTokens({ task: definition.task, tool: input.tool, request: result.optimizedRequest });
   const requiredFields = definition.task.toLowerCase().includes("title") ? ["title"] : definition.task.toLowerCase().includes("email") ? ["email"] : [];
   const correctness = result.applied.length === 0 || requiredFields.every((field) => optimizedQuery.toLowerCase().includes(field));
   return {
@@ -86,6 +92,10 @@ function caseResult(definition: Definition) {
     cutdexBytes: optimizedBytes,
     baselineApproximateToolResultTokens: baselineTokens,
     cutdexApproximateToolResultTokens: optimizedTokens,
+    baselineApproximateToolContextTokens: baselineRequestTokens + baselineTokens,
+    cutdexApproximateToolContextTokens: optimizedRequestTokens + optimizedTokens,
+    baselineApproximateRequestTokens: baselineRequestTokens,
+    cutdexApproximateRequestTokens: optimizedRequestTokens,
     optimizationLatencyMs,
     baselineTaskSuccess: definition.success,
     cutdexTaskSuccess: definition.success && correctness,
@@ -95,7 +105,7 @@ function caseResult(definition: Definition) {
   };
 }
 
-function sum(rows: ReturnType<typeof caseResult>[], key: "baselineBytes" | "cutdexBytes" | "baselineApproximateToolResultTokens" | "cutdexApproximateToolResultTokens"): number { return rows.reduce((total, row) => total + row[key], 0) }
+function sum(rows: ReturnType<typeof caseResult>[], key: "baselineBytes" | "cutdexBytes" | "baselineApproximateToolResultTokens" | "cutdexApproximateToolResultTokens" | "baselineApproximateToolContextTokens" | "cutdexApproximateToolContextTokens" | "baselineApproximateRequestTokens" | "cutdexApproximateRequestTokens"): number { return rows.reduce((total, row) => total + row[key], 0) }
 function median(values: number[]): number { const sorted = [...values].sort((a, b) => a - b); return sorted[Math.floor(sorted.length / 2)] ?? 0 }
 
 async function main(): Promise<void> {
@@ -104,19 +114,22 @@ async function main(): Promise<void> {
   const cutdexTokens = sum(cases, "cutdexApproximateToolResultTokens");
   const baselineBytes = sum(cases, "baselineBytes");
   const cutdexBytes = sum(cases, "cutdexBytes");
-  const baselineCost = costForTokens(baselineTokens, Math.round(baselineTokens * 0.08));
-  const cutdexCost = costForTokens(cutdexTokens, Math.round(cutdexTokens * 0.08));
+  const baselineContextTokens = sum(cases, "baselineApproximateToolContextTokens");
+  const cutdexContextTokens = sum(cases, "cutdexApproximateToolContextTokens");
+  const baselineRequestTokens = sum(cases, "baselineApproximateRequestTokens");
+  const cutdexRequestTokens = sum(cases, "cutdexApproximateRequestTokens");
   const baselinePassed = cases.filter((row) => row.baselineTaskSuccess).length;
   const cutdexPassed = cases.filter((row) => row.cutdexTaskSuccess).length;
   const result = {
     version: "0.3.0",
     measurementType: "deterministic_fixture_estimate",
-    limitations: ["Returned bytes and task outcomes come from deterministic local fixtures, not provider telemetry or real source databases.", "Approximate tool-result tokens use bytes divided by four; provider tokenization may differ.", "Optimization latency is measured locally and varies by hardware."],
+    limitations: ["Returned bytes and task outcomes come from deterministic local fixtures, not provider telemetry or real source databases.", "Approximate request and result tokens use UTF-8 JSON bytes divided by four; provider tokenization may differ.", "Context reduction excludes system prompts, conversation history, reasoning, generated output, and provider billing.", "Optimization latency is measured locally and varies by hardware."],
     generatedAt: new Date().toISOString(),
     sampleCount: cases.length,
     categories: [...new Set(cases.map((row) => row.category))],
-    costReductionPercent: Number(((1 - cutdexCost / baselineCost) * 100).toFixed(1)),
     toolTokenReductionPercent: Number(((1 - cutdexTokens / baselineTokens) * 100).toFixed(1)),
+    estimatedContextReductionPercent: Number(((1 - cutdexContextTokens / baselineContextTokens) * 100).toFixed(1)),
+    estimatedRequestTokenDeltaPercent: Number(((cutdexRequestTokens / baselineRequestTokens - 1) * 100).toFixed(1)),
     dataReductionPercent: Number(((1 - cutdexBytes / baselineBytes) * 100).toFixed(1)),
     baselinePassed,
     optimizedPassed: cutdexPassed,
@@ -126,7 +139,6 @@ async function main(): Promise<void> {
     callsOptimized: cases.filter((row) => row.modified).length,
     correctlyUnchanged: cases.filter((row) => !row.modified).length,
     medianOptimizationLatencyMs: Number(median(cases.map((row) => row.optimizationLatencyMs)).toFixed(3)),
-    pricing: { model: "illustrative", inputPerMillion: 3, outputPerMillion: 15 },
     cases,
   };
   const markdown = `# Cutdex benchmark
@@ -136,6 +148,8 @@ Generated from ${result.sampleCount} deterministic treatment cases across ${resu
 | Measure | Baseline | Cutdex | Change |
 | --- | ---: | ---: | ---: |
 | Approximate tool-result tokens | ${baselineTokens.toLocaleString()} | ${cutdexTokens.toLocaleString()} | **-${result.toolTokenReductionPercent}%** |
+| Approximate request + result context | ${baselineContextTokens.toLocaleString()} | ${cutdexContextTokens.toLocaleString()} | **-${result.estimatedContextReductionPercent}%** |
+| Approximate request tokens only | ${baselineRequestTokens.toLocaleString()} | ${cutdexRequestTokens.toLocaleString()} | **${result.estimatedRequestTokenDeltaPercent > 0 ? "+" : ""}${result.estimatedRequestTokenDeltaPercent}%** |
 | Returned fixture bytes | ${baselineBytes.toLocaleString()} | ${cutdexBytes.toLocaleString()} | **-${result.dataReductionPercent}%** |
 | Task success | ${result.baselinePassed}/${result.sampleCount} | ${result.optimizedPassed}/${result.sampleCount} | **${result.taskSuccessDelta}pp** |
 | Requests modified | — | ${result.callsOptimized} | — |
@@ -144,9 +158,9 @@ Generated from ${result.sampleCount} deterministic treatment cases across ${resu
 
 ## Method
 
-The dataset covers broad SQL projections, implied predicates, sort and limit requests, aggregates, joins and unions that must pass through, GraphQL over-fetching, structured API-shaped reads, write operations, explicit all-field controls, and already-efficient requests. Each case records the task, original and optimized request, deterministic fixture bytes, approximate model-facing tool-result tokens, measured local optimization latency, task-success flags, modification state, safety, and reason.
+The dataset covers broad SQL projections, implied predicates, sort and limit requests, aggregates, joins and unions that must pass through, GraphQL over-fetching, structured API-shaped reads, write operations, explicit all-field controls, and already-efficient requests. Each case records the task, original and optimized request, deterministic fixture bytes, approximate request and tool-result tokens, measured local optimization latency, task-success flags, modification state, safety, and reason.
 
-Task success is a fixture correctness gate: baseline cases are known-good, and treatment must preserve fields explicitly requested by the task. Token estimates use ceil(UTF-8 returned bytes / 4), not provider billing. The benchmark does not claim lower provider charges, more subscription usage, or performance against a real database/API.
+Task success is a fixture correctness gate: baseline cases are known-good, and treatment must preserve fields explicitly requested by the task. Context estimates use ceil(UTF-8 JSON bytes / 4), not provider billing. The context figure includes only the task/tool/request envelope and returned fixture result; it excludes system prompts, conversation history, model reasoning, generated output, and provider tokenization. The benchmark does not claim lower provider charges, more subscription usage, or performance against a real database/API.
 
 ## Quality gate
 
@@ -157,7 +171,7 @@ ${result.taskSuccessDelta >= -1 ? "PASS" : "FAIL"}: publishable runs require tre
   await writeFile(resolve("benchmarks/results/latest.md"), markdown);
   await mkdir(resolve("apps/web/public"), { recursive: true });
   await copyFile(resolve("benchmarks/results/latest.json"), resolve("apps/web/public/latest.json"));
-  console.log(`Cutdex deterministic benchmark\nCases ${result.sampleCount}\nApproximate tool-result token reduction ${result.toolTokenReductionPercent}%\nTask success delta ${result.taskSuccessDelta}pp\nMedian optimization latency ${result.medianOptimizationLatencyMs} ms\nQuality gate ${result.taskSuccessDelta >= -1 ? "PASS" : "FAIL"}`);
+  console.log(`Cutdex deterministic benchmark\nCases ${result.sampleCount}\nApproximate tool-result token reduction ${result.toolTokenReductionPercent}%\nApproximate request + result context reduction ${result.estimatedContextReductionPercent}%\nTask success delta ${result.taskSuccessDelta}pp\nMedian optimization latency ${result.medianOptimizationLatencyMs} ms\nQuality gate ${result.taskSuccessDelta >= -1 ? "PASS" : "FAIL"}`);
 }
 
 main().catch((error) => { console.error(error); process.exit(1) });

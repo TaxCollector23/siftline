@@ -5,6 +5,8 @@ Generated from 120 deterministic treatment cases across sql, sql-aggregate, sql-
 | Measure | Baseline | Cutdex | Change |
 | --- | ---: | ---: | ---: |
 | Approximate tool-result tokens | 5,377,870 | 1,006,770 | **-81.3%** |
+| Approximate request + result context | 5,383,330 | 1,012,760 | **-81.2%** |
+| Approximate request tokens only | 5,460 | 5,990 | **+9.7%** |
 | Returned fixture bytes | 21,511,170 | 4,026,770 | **-81.3%** |
 | Task success | 115/120 | 115/120 | **0pp** |
 | Requests modified | — | 70 | — |
@@ -13,9 +15,9 @@ Generated from 120 deterministic treatment cases across sql, sql-aggregate, sql-
 
 ## Method
 
-The dataset covers broad SQL projections, implied predicates, sort and limit requests, aggregates, joins and unions that must pass through, GraphQL over-fetching, structured API-shaped reads, write operations, explicit all-field controls, and already-efficient requests. Each case records the task, original and optimized request, deterministic fixture bytes, approximate model-facing tool-result tokens, measured local optimization latency, task-success flags, modification state, safety, and reason.
+The dataset covers broad SQL projections, implied predicates, sort and limit requests, aggregates, joins and unions that must pass through, GraphQL over-fetching, structured API-shaped reads, write operations, explicit all-field controls, and already-efficient requests. Each case records the task, original and optimized request, deterministic fixture bytes, approximate request and tool-result tokens, measured local optimization latency, task-success flags, modification state, safety, and reason.
 
-Task success is a fixture correctness gate: baseline cases are known-good, and treatment must preserve fields explicitly requested by the task. Token estimates use ceil(UTF-8 returned bytes / 4), not provider billing. The benchmark does not claim lower provider charges, more subscription usage, or performance against a real database/API.
+Task success is a fixture correctness gate: baseline cases are known-good, and treatment must preserve fields explicitly requested by the task. Context estimates use ceil(UTF-8 JSON bytes / 4), not provider billing. The context figure includes only the task/tool/request envelope and returned fixture result; it excludes system prompts, conversation history, model reasoning, generated output, and provider tokenization. The benchmark does not claim lower provider charges, more subscription usage, or performance against a real database/API.
 
 ## Quality gate
 
