@@ -27,13 +27,16 @@ LIMIT 5;
 
 Run `pnpm benchmark` to regenerate [`benchmarks/results/latest.json`](benchmarks/results/latest.json) and [`benchmarks/results/latest.md`](benchmarks/results/latest.md). The landing page loads the generated JSON; it does not contain hand-entered marketing numbers.
 
-The deterministic run uses 120 synthetic tasks and reports estimated fixture cost, returned bytes, approximate model-facing tokens, task-success delta, optimized calls, and unchanged controls. The current 65.6% result is not measured provider billing and does not promise more ChatGPT/Codex subscription usage.
+The deterministic run uses 120 synthetic tasks and reports fixture bytes, approximate model-facing tokens, task-success delta, optimization latency, per-case requests, optimized calls, and unchanged controls. The current 81.3% result is a local fixture measurement—not provider billing—and does not promise more ChatGPT/Codex subscription usage.
+
+`pnpm benchmark:real` measures the configured HTTP optimizer path against a small live request set. It uses `CUTDEX_BENCHMARK_API_URL` (default `http://localhost:4318/optimize`) and optional `CUTDEX_API_KEY`, writes `benchmarks/results/real-latest.json`, and never calls a source database or fabricates provider billing.
 
 ## Develop
 
 ```bash
 pnpm install
 pnpm benchmark
+pnpm benchmark:real
 pnpm test
 pnpm typecheck
 pnpm lint
@@ -50,6 +53,7 @@ cutdex login
 cutdex logout
 cutdex status
 cutdex connect codex
+cutdex disconnect codex
 cutdex mcp
 cutdex start
 cutdex bench
@@ -58,6 +62,8 @@ cutdex optimize <trace.json>
 cutdex report
 cutdex doctor
 ```
+
+`cutdex connect codex` registers the MCP server and idempotently adds a marked Cutdex block to the global `AGENTS.md` under `CODEX_HOME` (or `~/.codex`). `cutdex disconnect codex` removes only that block and unregisters only the Cutdex MCP server.
 
 ```ts
 import { optimizeToolCall } from "@cutdex/core";

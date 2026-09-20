@@ -5,6 +5,7 @@ import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { optimizeToolCall, type OptimizeInput, type OptimizationResult } from "@cutdex/core";
+import { agentsPath, codexHome, codexInstalled, cutdexMcpName, cutdexMcpRegistered, hasCutdexInstructions, installCutdexInstructions, removeCutdexInstructions } from "./codex.js";
 
 const version = "0.3.0";
 const root = resolve(fileURLToPath(import.meta.url), "../../..");
@@ -133,11 +134,58 @@ async function status(): Promise<void> {
 function connect(agent: string | undefined): void {
   if (agent !== "codex") throw new Error("v0.3 supports `cutdex connect codex`. More adapters will follow the stable proxy contract.");
   const mode = readConfig().apiKey ? "hosted API" : "local optimizer";
+  const home = codexHome();
   const command = "codex mcp add cutdex -- npx -y cutdex@latest mcp";
-  if (process.env.CUTDEX_CONNECT_DRY_RUN === "1") { console.log(`${command}\nMode: ${mode}`); return }
-  const result = spawnSync("codex", ["mcp", "add", "cutdex", "--", "npx", "-y", "cutdex@latest", "mcp"], { stdio: "inherit" });
-  if (result.error || result.status !== 0) { console.log(`Run this command manually:\n${command}`); throw new Error("Codex MCP registration did not complete.") }
-  console.log(`Cutdex is registered with Codex in ${mode} mode. Restart Codex, then run \`/mcp\` to verify it.`);
+  if (process.env.CUTDEX_CONNECT_DRY_RUN === "1") { console.log(`${command}\nMode: ${mode}\nCODEX_HOME: ${home}\nAGENTS: ${agentsPath(home)}`); return }
+  const result = spawnSync("codex", ["mcp", "add", cutdexMcpName, "--", "npx", "-y", "cutdex@latest", "mcp"], { stdio: "inherit", env: { ...process.env, CODEX_HOME: home }, windowsHide: true });
+  if (result.error || result.status !== 0) { console.log(`Run this command manually:\n${command}`); throw new Error("Codex MCP registration did not complete. Check that the Codex CLI is installed and that CODEX_HOME is writable.") }
+  try { installCutdexInstructions(agentsPath(home)) }
+  catch (error) {
+    spawnSync("codex", ["mcp", "remove", cutdexMcpName], { stdio: "ignore", env: { ...process.env, CODEX_HOME: home }, windowsHide: true });
+    throw new Error(`MCP registered, but Cutdex could not update ${agentsPath(home)}: ${error instanceof Error ? error.message : "permission denied"}`);
+  }
+  console.log(`✓ Logged in mode: ${mode}\n✓ MCP server registered\n✓ Automatic Codex instructions installed at ${agentsPath(home)}\n\nRestart Codex to load Cutdex.`);
+}
+
+function disconnect(agent: string | undefined): void {
+  if (agent !== "codex") throw new Error("Use `cutdex disconnect codex`.");
+  const home = codexHome();
+  if (!codexInstalled(home)) throw new Error("Codex CLI was not found. Install Codex or set CODEX_HOME to the correct installation.");
+  const result = spawnSync("codex", ["mcp", "remove", cutdexMcpName], { stdio: "ignore", env: { ...process.env, CODEX_HOME: home }, windowsHide: true });
+  const instructionResult = removeCutdexInstructions(agentsPath(home));
+  if (result.error) throw new Error(`Could not unregister Cutdex from Codex: ${result.error.message}`);
+  console.log(`✓ MCP server ${result.status === 0 ? "unregistered" : "already absent"}\n✓ Cutdex instructions ${instructionResult.present ? "removed" : "already absent"}\n\nCutdex is disconnected from Codex.`);
+}
+
+async function doctor(): Promise<void> {
+  const config = readConfig();
+  const home = codexHome();
+  const checks: Array<[string, boolean, string?]> = [];
+  checks.push(["Cutdex CLI", true, version]);
+  if (config.apiKey) {
+    try {
+      const started = Date.now();
+      const response = await fetch(`${config.apiUrl.replace(/\/$/, "")}/api/v1/auth/verify`, { headers: { authorization: `Bearer ${config.apiKey}` } });
+      checks.push(["Authentication", response.ok, response.ok ? undefined : "Run `cutdex login` to replace the credential."]);
+      checks.push(["Hosted API", response.ok, `${Date.now() - started} ms`]);
+    } catch { checks.push(["Authentication", false, "Run `cutdex login` to replace the credential."]); checks.push(["Hosted API", false, "Check CUTDEX_API_URL and network access."]) }
+  } else {
+    checks.push(["Authentication", true, "local mode"]);
+    checks.push(["Hosted API", true, "local mode"]);
+  }
+  const codexOk = codexInstalled(home);
+  checks.push(["Codex CLI", codexOk, codexOk ? undefined : "Install Codex or put it on PATH."]);
+  const registered = codexOk && cutdexMcpRegistered(home);
+  checks.push(["MCP registration", registered, registered ? undefined : "Run `cutdex connect codex`."]);
+  const instructions = hasCutdexInstructions(agentsPath(home));
+  checks.push(["Codex instructions", instructions, instructions ? undefined : "Run `cutdex connect codex`."]);
+  const sample: OptimizeInput = { task: "Find the five most recent failed orders", tool: { name: "database.query", kind: "READ", readOnly: true }, request: { query: "SELECT * FROM orders" } };
+  try { const result = await optimize(sample); checks.push(["Optimization request", result.applied.length > 0, result.applied.length ? "local check passed" : "No safe change returned."]) }
+  catch { checks.push(["Optimization request", false, "Check authentication or run in local mode."]) }
+  console.log("Cutdex Doctor\n");
+  for (const [name, ok, detail] of checks) console.log(`${name.padEnd(24)} ${ok ? "✓" : "✗"}${detail ? `  ${detail}` : ""}`);
+  if (checks.every(([, ok]) => ok)) console.log("\nCutdex is ready.");
+  else console.log("\nFix the failed checks above, then run `cutdex doctor` again.");
 }
 
 function sendMcp(message: unknown): void { process.stdout.write(`${JSON.stringify(message)}\n`) }
@@ -162,7 +210,7 @@ async function mcp(): Promise<void> {
 }
 
 function help(): void {
-  console.log("Usage:\n  cutdex login [api-key]\n  cutdex logout\n  cutdex status\n  cutdex connect codex\n  cutdex mcp\n  cutdex start\n  cutdex bench\n  cutdex analyze <traces.jsonl>\n  cutdex optimize <trace.json>\n  cutdex report\n  cutdex doctor");
+  console.log("Usage:\n  cutdex login [api-key]\n  cutdex logout\n  cutdex status\n  cutdex connect codex\n  cutdex disconnect codex\n  cutdex mcp\n  cutdex start\n  cutdex bench\n  cutdex analyze <traces.jsonl>\n  cutdex optimize <trace.json>\n  cutdex report\n  cutdex doctor");
 }
 
 function analyze(target: string): void {
@@ -183,7 +231,8 @@ async function main(): Promise<void> {
   if (command === "logout") { const config = readConfig(); writeConfig({ apiUrl: config.apiUrl }); console.log("Logged out. Your local Cutdex credential was removed."); return }
   if (command === "status") { await status(); return }
   if (command === "connect") { connect(process.argv[3]); return }
-  if (command === "doctor") { const config = readConfig(); console.log(`Node        ${process.version}\nAPI         ${config.apiUrl}\nCredential  ${config.apiKey ? `configured (…${config.keyLastFour ?? "????"})` : "missing"}\nProxy port  ${proxyPort}\nDashboard   ${dashboardPort}`); return }
+  if (command === "disconnect") { disconnect(process.argv[3]); return }
+  if (command === "doctor") { await doctor(); return }
   if (command === "bench") { console.log("Run `pnpm benchmark` from the repository to regenerate benchmark artifacts."); return }
   if (command === "report") { const report = join(root, "benchmarks/results/latest.md"); console.log(existsSync(report) ? readFileSync(report, "utf8") : "No generated benchmark report found. Run pnpm benchmark."); return }
   if (command === "analyze") { const target = process.argv[3]; if (!target) throw new Error("Provide a JSONL trace path."); analyze(target); return }

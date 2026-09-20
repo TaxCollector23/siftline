@@ -1,18 +1,22 @@
 # Cutdex benchmark
 
-Generated from 120 deterministic tasks across sql, issues, logs, control, already-optimal. This is a synthetic estimate, not provider telemetry.
+Generated from 120 deterministic treatment cases across sql, sql-aggregate, sql-unsupported, sql-ambiguous, control, write, graphql, structured-api, already-optimal. The baseline and treatment use the same task fixtures; treatment routes the read request through Cutdex before a deterministic fixture response is measured.
 
 | Measure | Baseline | Cutdex | Change |
 | --- | ---: | ---: | ---: |
-| Estimated cost | $0.5032 | $0.1730 | **-65.6%** |
-| Approximate tool-result tokens | 119,806 | 41,188 | **-65.6%** |
-| Simulated returned bytes | 443,277 | 152,397 | **-65.6%** |
-| Deterministic fixture success | 115/120 | 115/120 | **0pp** |
+| Approximate tool-result tokens | 5,377,870 | 1,006,770 | **-81.3%** |
+| Returned fixture bytes | 21,511,170 | 4,026,770 | **-81.3%** |
+| Task success | 115/120 | 115/120 | **0pp** |
+| Requests modified | — | 70 | — |
+| Safely unchanged | — | 50 | — |
+| Median optimization latency | — | 0.008 ms | — |
+
+## Method
+
+The dataset covers broad SQL projections, implied predicates, sort and limit requests, aggregates, joins and unions that must pass through, GraphQL over-fetching, structured API-shaped reads, write operations, explicit all-field controls, and already-efficient requests. Each case records the task, original and optimized request, deterministic fixture bytes, approximate model-facing tool-result tokens, measured local optimization latency, task-success flags, modification state, safety, and reason.
+
+Task success is a fixture correctness gate: baseline cases are known-good, and treatment must preserve fields explicitly requested by the task. Token estimates use ceil(UTF-8 returned bytes / 4), not provider billing. The benchmark does not claim lower provider charges, more subscription usage, or performance against a real database/API.
 
 ## Quality gate
 
-PASS: the benchmark is publishable only when fixture task-success delta is at least -1.0pp.
-
-## Method and limits
-
-Baseline uses the broad fixture request. Cutdex applies conservative source-side narrowing. Costs are estimated using an illustrative pricing table (3/M input tokens, 15/M output tokens). The suite includes controls where optimization should not apply. It does not prove lower provider billing or increased subscription usage; that requires instrumented production traffic and before/after provider usage.
+PASS: publishable runs require treatment task success to remain within 1.0 percentage point of baseline.

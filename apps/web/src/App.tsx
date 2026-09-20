@@ -3,7 +3,7 @@ import { optimizeToolCall } from "@cutdex/core";
 import Account from "./Account";
 
 type Bench = { costReductionPercent: number; toolTokenReductionPercent: number; taskSuccessDelta: number; sampleCount: number; baselinePassed: number; optimizedPassed: number; dataReductionPercent: number };
-const fallback: Bench = { costReductionPercent: 65.6, toolTokenReductionPercent: 65.6, taskSuccessDelta: 0, sampleCount: 120, baselinePassed: 115, optimizedPassed: 115, dataReductionPercent: 65.6 };
+const fallback: Bench = { costReductionPercent: 81.3, toolTokenReductionPercent: 81.3, taskSuccessDelta: 0, sampleCount: 120, baselinePassed: 115, optimizedPassed: 115, dataReductionPercent: 81.3 };
 const sampleTask = "Find the five most recent failed orders";
 const sampleQuery = "SELECT * FROM orders;";
 const apiSnippet = ["const optimized = await fetch(", "  \"https://siftline-omega.vercel.app/api/v1/optimize\",", "  {", "    method: \"POST\",", "    headers: {", "      Authorization: `Bearer ${CUTDEX_API_KEY}`,", "      \"Content-Type\": \"application/json\"", "    },", "    body: JSON.stringify({ task, tool, request })", "  }", ");"].join("\n");
