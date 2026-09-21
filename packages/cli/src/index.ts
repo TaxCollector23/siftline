@@ -12,7 +12,6 @@ const root = resolve(fileURLToPath(import.meta.url), "../../..");
 const dashboardPort = 4317;
 const proxyPort = 4318;
 const defaultApiUrl = "https://siftline-omega.vercel.app";
-let bannerPrinted = false;
 
 interface Config { apiUrl: string; apiKey?: string; keyName?: string; keyLastFour?: string }
 
@@ -32,12 +31,6 @@ function writeConfig(config: Config): void {
   mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
   writeFileSync(path, `${JSON.stringify(config, null, 2)}\n`, { mode: 0o600 });
   chmodSync(path, 0o600);
-}
-
-function printBanner(): void {
-  if (bannerPrinted || !process.stdout.isTTY) return;
-  bannerPrinted = true;
-  console.log("\u001b[38;2;236;100;61m╭──────────────────────────────────────────╮\n│  CutDex                                  │\n│  source-side request optimizer           │\n╰──────────────────────────────────────────╯\u001b[0m\n");
 }
 
 function json(res: ServerResponse, value: unknown, status = 200): void {
@@ -281,7 +274,6 @@ function analyze(target: string, inputPerMillion = optionNumber("--input-price",
 async function main(): Promise<void> {
   const command = process.argv[2] ?? "--help";
   if (command === "mcp") { await mcp(); return }
-  printBanner();
   if (command === "--help" || command === "help") { help(); return }
   if (command === "login") { await login(process.argv[3]); return }
   if (command === "logout") { const config = readConfig(); writeConfig({ apiUrl: config.apiUrl }); console.log("Logged out. Your local Cutdex credential was removed."); return }

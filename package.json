@@ -4,7 +4,7 @@
   "description": "Conservative read optimization for Codex tool calls.",
   "type": "module",
   "bin": { "cutdex": "dist/cli/index.js" },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": ["dist", "README.md", "LICENSE", "scripts/postinstall.mjs"],
   "scripts": {
     "dev": "concurrently \"pnpm --dir apps/web dev\" \"pnpm benchmark:watch\"",
     "build": "pnpm build:core && pnpm build:cli && pnpm --dir apps/web build",
@@ -17,6 +17,7 @@
     "benchmark:real": "tsx scripts/benchmark-real.ts",
     "benchmark:watch": "tsx scripts/benchmark.ts --watch",
     "prepublishOnly": "pnpm build:core && pnpm build:cli",
+    "postinstall": "node scripts/postinstall.mjs",
     "start": "node dist/cli/index.js start"
   },
   "workspaces": ["apps/*", "packages/*"],

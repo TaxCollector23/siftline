@@ -31,6 +31,8 @@ The deterministic run uses 120 synthetic tasks and reports fixture bytes, approx
 
 The npm package is not published yet. From this repository, run `pnpm build`, then use `node dist/cli/index.js login` and `node dist/cli/index.js connect codex`; the connector registers the exact built CLI path with Codex.
 
+The orange CutDex startup card is emitted by the package post-install hook after a successful download. It is shown once per identifiable terminal session; normal CLI commands stay quiet.
+
 `pnpm benchmark:real` measures the configured HTTP optimizer path against a small live request set. It uses `CUTDEX_BENCHMARK_API_URL` (default `http://localhost:4318/optimize`) and optional `CUTDEX_API_KEY`, writes `benchmarks/results/real-latest.json`, and never calls a source database or fabricates provider billing.
 
 ## Develop

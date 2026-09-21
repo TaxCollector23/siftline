@@ -23,4 +23,6 @@ cutdex disconnect codex
 
 Disconnect removes only Cutdex's MCP registration and managed instruction block; unrelated Codex configuration and instructions are preserved.
 
+The package startup art is not part of command output. It appears once after a successful package download when the terminal exposes a session id.
+
 Important boundary: MCP adds a tool. It does not silently intercept Codex's built-in shell, browser, filesystem, or other MCP servers. Automatic interception requires an application-level middleware adapter around the actual tool executor. Without a hosted key, `cutdex mcp` runs the same optimizer locally, so the integration is useful in development without an account.
