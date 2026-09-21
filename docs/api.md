@@ -31,6 +31,17 @@ Authorization: Bearer sift_live_...
 
 The response includes `originalRequest`, `optimizedRequest`, independent applied/skipped passes, confidence, safety, explanation, request ID, and remaining quota. Because the optimizer does not execute or observe the source tool, transformed calls report savings as `not_measured`; adapters should record before/after result bytes or provider usage. Writes and unknown operations pass through unchanged.
 
+For an application that owns the source-tool executor, use the SDK wrapper so the model sees only the compacted result without an additional agent round-trip:
+
+```ts
+import { executeWithCutdex } from "@cutdex/core";
+
+const run = await executeWithCutdex(input, (request) => database.query(request.query));
+return run.response;
+```
+
+The wrapper only projects fields explicitly named by the task and applies an explicit row limit. Ambiguous results are preserved. It reports serialized-byte savings; provider token savings must still be measured from paired usage traces.
+
 ## Account endpoints
 
 - `GET /api/v1/keys` lists key metadata for a Firebase-authenticated user.

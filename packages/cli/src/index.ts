@@ -4,10 +4,10 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { compareUsage, optimizeToolCall, type OptimizeInput, type OptimizationResult, type UsageSnapshot } from "@cutdex/core";
+import { compactToolResult, compareUsage, optimizeToolCall, type OptimizeInput, type OptimizationResult, type UsageSnapshot } from "@cutdex/core";
 import { agentsPath, codexHome, codexInstalled, cutdexMcpName, cutdexMcpRegistered, hasCutdexInstructions, installCutdexInstructions, removeCutdexInstructions } from "./codex.js";
 
-const version = "0.3.0";
+const version = "0.3.1";
 const root = resolve(fileURLToPath(import.meta.url), "../../..");
 const dashboardPort = 4317;
 const proxyPort = 4318;
@@ -213,7 +213,7 @@ async function mcp(): Promise<void> {
 }
 
 function help(): void {
-  console.log("Usage:\n  cutdex login [api-key]\n  cutdex logout\n  cutdex status\n  cutdex connect codex\n  cutdex disconnect codex\n  cutdex mcp\n  cutdex start\n  cutdex bench\n  cutdex analyze <traces.jsonl> [--input-price N --output-price N]\n  cutdex optimize <trace.json>\n  cutdex report\n  cutdex doctor");
+  console.log("Usage:\n  cutdex login [api-key]\n  cutdex logout\n  cutdex status\n  cutdex connect codex\n  cutdex disconnect codex\n  cutdex mcp\n  cutdex start\n  cutdex bench\n  cutdex analyze <traces.jsonl> [--input-price N --output-price N]\n  cutdex compact <result.json> --task \"...\"\n  cutdex optimize <trace.json>\n  cutdex report\n  cutdex doctor");
 }
 
 type RawTrace = { id?: string; variant?: string; mode?: string; task?: string; tool?: { name?: string }; request?: { query?: string }; usage?: unknown; comparison?: { baseline?: unknown; cutdex?: unknown } };
@@ -271,6 +271,15 @@ function analyze(target: string, inputPerMillion = optionNumber("--input-price",
   console.log(`\nMeasured usage (${measured.length} paired runs)\nInput tokens   ${delta.baselineInputTokens.toLocaleString()} → ${delta.cutdexInputTokens.toLocaleString()}  ${delta.inputReductionPercent.toFixed(1)}% less\nOutput tokens  ${delta.baselineOutputTokens.toLocaleString()} → ${delta.cutdexOutputTokens.toLocaleString()}  ${delta.outputTokensSaved >= 0 ? delta.outputTokensSaved.toLocaleString() : `${Math.abs(delta.outputTokensSaved).toLocaleString()} more`}\nTotal tokens   ${delta.totalTokensSaved.toLocaleString()} saved  (${delta.totalReductionPercent.toFixed(1)}% less)\nEstimated cost $${delta.baselineCostUsd.toFixed(4)} → $${delta.cutdexCostUsd.toFixed(4)}  $${delta.costSavedUsd.toFixed(4)} saved\nPricing        $${inputPerMillion}/M input · $${outputPerMillion}/M output`);
 }
 
+function compact(target: string): void {
+  const taskIndex = process.argv.indexOf("--task");
+  const task = taskIndex >= 0 ? process.argv[taskIndex + 1]?.trim() : undefined;
+  if (!task) throw new Error("Provide the source task with --task \"...\".");
+  const result = compactToolResult({ task, result: JSON.parse(readFileSync(resolve(target), "utf8")) });
+  console.error(`Cutdex result compaction\n${result.originalBytes.toLocaleString()} → ${result.compactedBytes.toLocaleString()} bytes\nApproximately ${result.approximateTokensSaved.toLocaleString()} tokens saved (${result.reductionPercent.toFixed(1)}% serialized JSON)\n${result.explanation.join(" ")}`);
+  process.stdout.write(`${JSON.stringify(result.compactedResult, null, 2)}\n`);
+}
+
 async function main(): Promise<void> {
   const command = process.argv[2] ?? "--help";
   if (command === "mcp") { await mcp(); return }
@@ -284,6 +293,7 @@ async function main(): Promise<void> {
   if (command === "bench") { console.log("Run `pnpm benchmark` from the repository to regenerate benchmark artifacts."); return }
   if (command === "report") { const report = join(root, "benchmarks/results/latest.md"); console.log(existsSync(report) ? readFileSync(report, "utf8") : "No generated benchmark report found. Run pnpm benchmark."); return }
   if (command === "analyze") { const target = process.argv[3]; if (!target) throw new Error("Provide a JSONL trace path."); analyze(target); return }
+  if (command === "compact") { const target = process.argv[3]; if (!target) throw new Error("Provide a JSON result path."); compact(target); return }
   if (command === "optimize" || command === "explain") { const target = process.argv[3]; if (!target) throw new Error("Provide a trace JSON path."); const trace = JSON.parse(readFileSync(resolve(target), "utf8")) as OptimizeInput; console.log(JSON.stringify(await optimize(trace), null, 2)); return }
   if (command !== "start") { help(); return }
   const config = readConfig(); const proxyServer = proxy().listen(proxyPort); const dashboardServer = dashboard().listen(dashboardPort);

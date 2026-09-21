@@ -25,4 +25,4 @@ Disconnect removes only Cutdex's MCP registration and managed instruction block;
 
 The package startup art is not part of command output. It appears once after a successful package download when the terminal exposes a session id.
 
-Important boundary: MCP adds a tool. It does not silently intercept Codex's built-in shell, browser, filesystem, or other MCP servers. Automatic interception requires an application-level middleware adapter around the actual tool executor. Without a hosted key, `cutdex mcp` runs the same optimizer locally, so the integration is useful in development without an account.
+Important boundary: MCP adds a tool. It does not silently intercept Codex's built-in shell, browser, filesystem, or other MCP servers, and it does not reduce the number of reasoning/tool steps by itself. The Codex path reduces eligible structured read payloads when Codex follows the instruction. For a true pre- and post-execution boundary with no extra model round-trip, use `executeWithCutdex` in the application or adapter that owns the source-tool executor. Without a hosted key, `cutdex mcp` runs the same optimizer locally.

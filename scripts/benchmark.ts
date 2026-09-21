@@ -123,7 +123,7 @@ async function main(): Promise<void> {
   const baselinePassed = cases.filter((row) => row.baselineTaskSuccess).length;
   const cutdexPassed = cases.filter((row) => row.cutdexTaskSuccess).length;
   const result = {
-    version: "0.3.0",
+    version: "0.3.1",
     measurementType: "deterministic_fixture_estimate",
     limitations: ["Returned bytes and task outcomes come from deterministic local fixtures, not provider telemetry or real source databases.", "Approximate request and result tokens use UTF-8 JSON bytes divided by four; provider tokenization may differ.", "Context reduction excludes system prompts, conversation history, reasoning, generated output, and provider billing.", "Optimization latency is measured locally and varies by hardware."],
     generatedAt: new Date().toISOString(),

@@ -9,7 +9,7 @@ cutdex connect codex
 
 Cutdex sits between an agent and a read-only database/API tool. It rewrites broad SQL and GraphQL-style requests before execution so the source returns fewer rows and fields to the model. It is not prompt compression, context summarization, model routing, or a magic wrapper around every tool already installed in a coding agent.
 
-For custom agents, call `POST /api/v1/optimize` immediately before executing the tool request. For Codex, `cutdex connect codex` registers an MCP tool that the agent can call before a broad read. See [the API contract](docs/api.md) and [the Codex setup](docs/codex.md).
+For custom agents, call `POST /api/v1/optimize` immediately before executing the tool request. If your application owns the executor, `executeWithCutdex` also compacts the returned structured result before it reaches the model, without an extra model round-trip. For Codex, `cutdex connect codex` registers an MCP tool that the agent can call before a broad read. See [the API contract](docs/api.md) and [the Codex setup](docs/codex.md).
 
 ## Before / after
 
