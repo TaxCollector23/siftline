@@ -4,7 +4,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { optimizeToolCall, type OptimizeInput, type OptimizationResult } from "@cutdex/core";
+import { compareUsage, optimizeToolCall, type OptimizeInput, type OptimizationResult, type UsageSnapshot } from "@cutdex/core";
 import { agentsPath, codexHome, codexInstalled, cutdexMcpName, cutdexMcpRegistered, hasCutdexInstructions, installCutdexInstructions, removeCutdexInstructions } from "./codex.js";
 
 const version = "0.3.0";
@@ -37,7 +37,7 @@ function writeConfig(config: Config): void {
 function printBanner(): void {
   if (bannerPrinted || !process.stdout.isTTY) return;
   bannerPrinted = true;
-  console.log("\u001b[38;2;236;100;61m╭──────────────────────────────────────────╮\n│  Cutdex                                  │\n│  source-side request optimizer           │\n╰──────────────────────────────────────────╯\u001b[0m\n");
+  console.log("\u001b[38;2;236;100;61m╭──────────────────────────────────────────╮\n│  CutDex                                  │\n│  source-side request optimizer           │\n╰──────────────────────────────────────────╯\u001b[0m\n");
 }
 
 function json(res: ServerResponse, value: unknown, status = 200): void {
@@ -220,16 +220,62 @@ async function mcp(): Promise<void> {
 }
 
 function help(): void {
-  console.log("Usage:\n  cutdex login [api-key]\n  cutdex logout\n  cutdex status\n  cutdex connect codex\n  cutdex disconnect codex\n  cutdex mcp\n  cutdex start\n  cutdex bench\n  cutdex analyze <traces.jsonl>\n  cutdex optimize <trace.json>\n  cutdex report\n  cutdex doctor");
+  console.log("Usage:\n  cutdex login [api-key]\n  cutdex logout\n  cutdex status\n  cutdex connect codex\n  cutdex disconnect codex\n  cutdex mcp\n  cutdex start\n  cutdex bench\n  cutdex analyze <traces.jsonl> [--input-price N --output-price N]\n  cutdex optimize <trace.json>\n  cutdex report\n  cutdex doctor");
 }
 
-function analyze(target: string): void {
-  const traces = readFileSync(resolve(target), "utf8").split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line) as { tool?: { name?: string }; request?: { query?: string } });
+type RawTrace = { id?: string; variant?: string; mode?: string; task?: string; tool?: { name?: string }; request?: { query?: string }; usage?: unknown; comparison?: { baseline?: unknown; cutdex?: unknown } };
+
+function normalizeUsage(value: unknown): UsageSnapshot | null {
+  if (!value || typeof value !== "object") return null;
+  const usage = value as Record<string, unknown>;
+  const number = (camel: string, snake: string): number | undefined => {
+    const candidate = usage[camel] ?? usage[snake];
+    return typeof candidate === "number" && Number.isFinite(candidate) ? candidate : undefined;
+  };
+  const inputTokens = number("inputTokens", "input_tokens");
+  const outputTokens = number("outputTokens", "output_tokens");
+  return inputTokens === undefined && outputTokens === undefined ? null : { inputTokens, outputTokens };
+}
+
+function addUsage(target: UsageSnapshot, value: UsageSnapshot): void {
+  target.inputTokens = (target.inputTokens ?? 0) + (value.inputTokens ?? 0);
+  target.outputTokens = (target.outputTokens ?? 0) + (value.outputTokens ?? 0);
+}
+
+function optionNumber(name: string, fallback: number): number {
+  const index = process.argv.indexOf(name);
+  const value = index >= 0 ? Number(process.argv[index + 1]) : fallback;
+  return Number.isFinite(value) && value >= 0 ? value : fallback;
+}
+
+function analyze(target: string, inputPerMillion = optionNumber("--input-price", 3), outputPerMillion = optionNumber("--output-price", 15)): void {
+  const traces = readFileSync(resolve(target), "utf8").split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line) as RawTrace);
   const byTool = new Map<string, number>(); let fields = 0;
   for (const trace of traces) { const name = trace.tool?.name ?? "unknown"; byTool.set(name, (byTool.get(name) ?? 0) + 1); fields += trace.request?.query?.split(/\s+/).filter((token) => /^[A-Za-z_][A-Za-z0-9_]*$/.test(token)).length ?? 0 }
   console.log(`Calls analyzed: ${traces.length}\nAverage query identifiers: ${traces.length ? (fields / traces.length).toFixed(1) : "0.0"}\n\nTools:`);
   for (const [name, count] of byTool) console.log(`  ${name} · ${count} calls`);
-  console.log("\nThese are candidates for validation, not proof of causality.");
+  const pairs = new Map<string, { baseline: UsageSnapshot; cutdex: UsageSnapshot }>();
+  for (const trace of traces) {
+    const id = trace.id ?? "unidentified";
+    const pair = pairs.get(id) ?? { baseline: {}, cutdex: {} };
+    const comparison = trace.comparison;
+    const baseline = normalizeUsage(comparison?.baseline);
+    const cutdex = normalizeUsage(comparison?.cutdex);
+    if (baseline && cutdex) { addUsage(pair.baseline, baseline); addUsage(pair.cutdex, cutdex); }
+    else {
+      const usage = normalizeUsage(trace.usage);
+      const variant = (trace.variant ?? trace.mode ?? "").toLowerCase();
+      if (usage && (variant === "baseline" || variant === "original")) addUsage(pair.baseline, usage);
+      if (usage && (variant === "cutdex" || variant === "optimized" || variant === "treatment")) addUsage(pair.cutdex, usage);
+    }
+    pairs.set(id, pair);
+  }
+  const measured = [...pairs.values()].filter((pair) => pair.baseline.inputTokens !== undefined || pair.baseline.outputTokens !== undefined).filter((pair) => pair.cutdex.inputTokens !== undefined || pair.cutdex.outputTokens !== undefined);
+  if (!measured.length) { console.log("\nMeasured usage: unavailable\nAdd paired baseline/cutdex records with usage.inputTokens and usage.outputTokens."); return }
+  const baseline: UsageSnapshot = {}; const cutdex: UsageSnapshot = {};
+  for (const pair of measured) { addUsage(baseline, pair.baseline); addUsage(cutdex, pair.cutdex); }
+  const delta = compareUsage({ baseline, cutdex }, { model: "custom", inputPerMillion, cachedInputPerMillion: 0, outputPerMillion });
+  console.log(`\nMeasured usage (${measured.length} paired runs)\nInput tokens   ${delta.baselineInputTokens.toLocaleString()} → ${delta.cutdexInputTokens.toLocaleString()}  ${delta.inputReductionPercent.toFixed(1)}% less\nOutput tokens  ${delta.baselineOutputTokens.toLocaleString()} → ${delta.cutdexOutputTokens.toLocaleString()}  ${delta.outputTokensSaved >= 0 ? delta.outputTokensSaved.toLocaleString() : `${Math.abs(delta.outputTokensSaved).toLocaleString()} more`}\nTotal tokens   ${delta.totalTokensSaved.toLocaleString()} saved  (${delta.totalReductionPercent.toFixed(1)}% less)\nEstimated cost $${delta.baselineCostUsd.toFixed(4)} → $${delta.cutdexCostUsd.toFixed(4)}  $${delta.costSavedUsd.toFixed(4)} saved\nPricing        $${inputPerMillion}/M input · $${outputPerMillion}/M output`);
 }
 
 async function main(): Promise<void> {

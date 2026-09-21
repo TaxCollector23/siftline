@@ -7,11 +7,12 @@ Generated from 120 deterministic treatment cases across sql, sql-aggregate, sql-
 | Approximate tool-result tokens | 5,377,870 | 1,006,770 | **-81.3%** |
 | Approximate request + result context | 5,383,330 | 1,012,760 | **-81.2%** |
 | Approximate request tokens only | 5,460 | 5,990 | **+9.7%** |
+| Estimated input cost at $3/M | $16.15 | $3.04 | **-$13.11** |
 | Returned fixture bytes | 21,511,170 | 4,026,770 | **-81.3%** |
 | Task success | 115/120 | 115/120 | **0pp** |
 | Requests modified | — | 70 | — |
 | Safely unchanged | — | 50 | — |
-| Median optimization latency | — | 0.008 ms | — |
+| Median optimization latency | — | 0.007 ms | — |
 
 ## Method
 

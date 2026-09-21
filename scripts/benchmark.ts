@@ -1,7 +1,7 @@
 import { copyFile, mkdir, writeFile } from "node:fs/promises";
 import { performance } from "node:perf_hooks";
 import { resolve } from "node:path";
-import { optimizeToolCall, parseGraphql, parseSelect, type OptimizationResult } from "../packages/core/src/index.js";
+import { costForTokens, optimizeToolCall, parseGraphql, parseSelect, type OptimizationResult } from "../packages/core/src/index.js";
 
 type Definition = {
   id: string;
@@ -118,6 +118,8 @@ async function main(): Promise<void> {
   const cutdexContextTokens = sum(cases, "cutdexApproximateToolContextTokens");
   const baselineRequestTokens = sum(cases, "baselineApproximateRequestTokens");
   const cutdexRequestTokens = sum(cases, "cutdexApproximateRequestTokens");
+  const baselineInputCostUsd = costForTokens(baselineContextTokens, 0);
+  const cutdexInputCostUsd = costForTokens(cutdexContextTokens, 0);
   const baselinePassed = cases.filter((row) => row.baselineTaskSuccess).length;
   const cutdexPassed = cases.filter((row) => row.cutdexTaskSuccess).length;
   const result = {
@@ -130,6 +132,9 @@ async function main(): Promise<void> {
     toolTokenReductionPercent: Number(((1 - cutdexTokens / baselineTokens) * 100).toFixed(1)),
     estimatedContextReductionPercent: Number(((1 - cutdexContextTokens / baselineContextTokens) * 100).toFixed(1)),
     estimatedRequestTokenDeltaPercent: Number(((cutdexRequestTokens / baselineRequestTokens - 1) * 100).toFixed(1)),
+    baselineContextTokens,
+    cutdexContextTokens,
+    estimatedInputCostUsd: { baseline: Number(baselineInputCostUsd.toFixed(2)), cutdex: Number(cutdexInputCostUsd.toFixed(2)), saved: Number((baselineInputCostUsd - cutdexInputCostUsd).toFixed(2)), inputPerMillion: 3 },
     dataReductionPercent: Number(((1 - cutdexBytes / baselineBytes) * 100).toFixed(1)),
     baselinePassed,
     optimizedPassed: cutdexPassed,
@@ -150,6 +155,7 @@ Generated from ${result.sampleCount} deterministic treatment cases across ${resu
 | Approximate tool-result tokens | ${baselineTokens.toLocaleString()} | ${cutdexTokens.toLocaleString()} | **-${result.toolTokenReductionPercent}%** |
 | Approximate request + result context | ${baselineContextTokens.toLocaleString()} | ${cutdexContextTokens.toLocaleString()} | **-${result.estimatedContextReductionPercent}%** |
 | Approximate request tokens only | ${baselineRequestTokens.toLocaleString()} | ${cutdexRequestTokens.toLocaleString()} | **${result.estimatedRequestTokenDeltaPercent > 0 ? "+" : ""}${result.estimatedRequestTokenDeltaPercent}%** |
+| Estimated input cost at $3/M | $${result.estimatedInputCostUsd.baseline.toFixed(2)} | $${result.estimatedInputCostUsd.cutdex.toFixed(2)} | **-$${result.estimatedInputCostUsd.saved.toFixed(2)}** |
 | Returned fixture bytes | ${baselineBytes.toLocaleString()} | ${cutdexBytes.toLocaleString()} | **-${result.dataReductionPercent}%** |
 | Task success | ${result.baselinePassed}/${result.sampleCount} | ${result.optimizedPassed}/${result.sampleCount} | **${result.taskSuccessDelta}pp** |
 | Requests modified | — | ${result.callsOptimized} | — |
@@ -171,7 +177,7 @@ ${result.taskSuccessDelta >= -1 ? "PASS" : "FAIL"}: publishable runs require tre
   await writeFile(resolve("benchmarks/results/latest.md"), markdown);
   await mkdir(resolve("apps/web/public"), { recursive: true });
   await copyFile(resolve("benchmarks/results/latest.json"), resolve("apps/web/public/latest.json"));
-  console.log(`Cutdex deterministic benchmark\nCases ${result.sampleCount}\nApproximate tool-result token reduction ${result.toolTokenReductionPercent}%\nApproximate request + result context reduction ${result.estimatedContextReductionPercent}%\nTask success delta ${result.taskSuccessDelta}pp\nMedian optimization latency ${result.medianOptimizationLatencyMs} ms\nQuality gate ${result.taskSuccessDelta >= -1 ? "PASS" : "FAIL"}`);
+  console.log(`Cutdex deterministic benchmark\nCases ${result.sampleCount}\nApproximate tool-result token reduction ${result.toolTokenReductionPercent}%\nApproximate request + result context reduction ${result.estimatedContextReductionPercent}%\nEstimated input cost at $3/M $${result.estimatedInputCostUsd.baseline.toFixed(2)} → $${result.estimatedInputCostUsd.cutdex.toFixed(2)}\nTask success delta ${result.taskSuccessDelta}pp\nMedian optimization latency ${result.medianOptimizationLatencyMs} ms\nQuality gate ${result.taskSuccessDelta >= -1 ? "PASS" : "FAIL"}`);
 }
 
 main().catch((error) => { console.error(error); process.exit(1) });
