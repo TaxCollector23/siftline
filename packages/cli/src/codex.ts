@@ -23,6 +23,8 @@ export function cutdexInstructions(newline = "\n"): string {
     "",
     "Use the returned `optimizedRequest` with the original source tool. If Cutdex passes the request through, fails, or returns no safe change, execute the original request unchanged.",
     "",
+    "Prefer one bounded read with explicit fields, filters, sort, and limit. Do not fetch an exploratory unbounded result and then repeat the same read; only paginate or retry when the task requires it or the source reports an incomplete result.",
+    "",
     "Never use Cutdex for INSERT, UPDATE, DELETE, mutations, writes, or state-changing commands. Do not invent filters or fields that the task does not support.",
     managedEnd,
   ].join(newline);
