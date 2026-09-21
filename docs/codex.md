@@ -3,9 +3,11 @@
 Codex supports local STDIO MCP servers. Cutdex uses that connection as an explicit request optimizer.
 
 ```bash
-node dist/cli/index.js login
-node dist/cli/index.js connect codex
+npx cutdex@latest login
+cutdex connect codex
 ```
+
+`cutdex login` opens the hosted key page in your browser. Sign in with Google, create a key, click **Copy key**, and paste it into the waiting terminal prompt. Installing or running the public package does not require `npm login`; npm authentication is only needed to publish.
 
 The second command registers the exact built CLI executable:
 

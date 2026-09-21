@@ -9,7 +9,9 @@ export default function Account() {
   const [user, setUser] = useState<User | null>(services?.auth.currentUser ?? null);
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [createdKey, setCreatedKey] = useState<string>();
+  const [copied, setCopied] = useState(false);
   const [message, setMessage] = useState<string>();
+  const cliMode = new URLSearchParams(window.location.search).get("from") === "cli";
 
   useEffect(() => {
     if (!services) return undefined;
@@ -29,7 +31,7 @@ export default function Account() {
   }
   async function createKey(): Promise<void> {
     if (!user) return;
-    setMessage(undefined); setCreatedKey(undefined);
+    setMessage(undefined); setCreatedKey(undefined); setCopied(false);
     const response = await fetch("/api/v1/keys", { method: "POST", headers: { authorization: `Bearer ${await token(user)}`, "content-type": "application/json" }, body: JSON.stringify({ name: "CLI key" }) });
     const result = await response.json() as { apiKey?: string; message?: string };
     if (!response.ok || !result.apiKey) { setMessage(result.message ?? "Could not create a key."); return }
@@ -49,7 +51,13 @@ export default function Account() {
     catch (error: unknown) { setMessage(authMessage(error)); }
   }
 
-  return <main><SiteHeader /><section className="account wrap"><h1>Your keys.<br /><em>Your agents.</em></h1>{!firebaseConfigured ? <div className="account-notice"><h2>Account setup is waiting on Firebase.</h2><p>The interface and API are built, but Google sign-in will stay disabled until the Firebase project values and server credentials are configured on Vercel.</p></div> : !user ? <div className="account-login"><h2>Sign in to create an API key.</h2><p>Google returns to this page in the same tab. No popup is used.</p><button onClick={signIn}>Continue with Google <span>↗</span></button></div> : <><div className="account-user"><span>{user.email}</span><button className="link-button" onClick={() => services && signOut(services.auth)}>Sign out</button></div><div className="key-heading"><div><h2>API keys</h2><p>60 requests per minute and 10,000 per month by default.</p></div><button onClick={createKey}>Create key <span>＋</span></button></div>{createdKey && <div className="new-key"><strong>Copy this now. It will not be shown again.</strong><code>{createdKey}</code></div>}<div className="key-list">{keys.map((key) => <div key={key.id}><strong>{key.name}</strong><code>•••• {key.lastFour}</code><span>{key.status}</span><span>{key.lastUsedAt ? `used ${new Date(key.lastUsedAt).toLocaleDateString()}` : "never used"}</span>{key.status === "active" && <button className="link-button danger" onClick={() => revokeKey(key.id)}>Revoke</button>}</div>)}{!keys.length && <p>No keys yet.</p>}</div></>}{message && <p className="error-message">{message}</p>}</section><SiteFooter /></main>;
+  async function copyKey(): Promise<void> {
+    if (!createdKey) return;
+    try { await navigator.clipboard.writeText(createdKey); setCopied(true); }
+    catch { setMessage("Could not copy the key. Select it and copy it manually."); }
+  }
+
+  return <main><SiteHeader /><section className="account wrap"><h1>Your keys.<br /><em>Your agents.</em></h1>{!firebaseConfigured ? <div className="account-notice"><h2>Account setup is waiting on Firebase.</h2><p>The interface and API are built, but Google sign-in will stay disabled until the Firebase project values and server credentials are configured on Vercel.</p></div> : !user ? <div className="account-login"><h2>Sign in to create an API key.</h2><p>{cliMode ? "Sign in, create a key, copy it, and paste it back into your terminal." : "Google returns to this page in the same tab. No popup is used."}</p><button onClick={signIn}>Continue with Google <span>↗</span></button></div> : <><div className="account-user"><span>{user.email}</span><button className="link-button" onClick={() => services && signOut(services.auth)}>Sign out</button></div><div className="key-heading"><div><h2>API keys</h2><p>60 requests per minute and 10,000 per month by default.</p></div><button onClick={createKey}>Create key <span>＋</span></button></div>{createdKey && <div className="new-key"><strong>Copy this now. It will not be shown again.</strong><div className="new-key-value"><code>{createdKey}</code><button onClick={copyKey}>{copied ? "Copied" : "Copy key"}</button></div></div>}<div className="key-list">{keys.map((key) => <div key={key.id}><strong>{key.name}</strong><code>•••• {key.lastFour}</code><span>{key.status}</span><span>{key.lastUsedAt ? `used ${new Date(key.lastUsedAt).toLocaleDateString()}` : "never used"}</span>{key.status === "active" && <button className="link-button danger" onClick={() => revokeKey(key.id)}>Revoke</button>}</div>)}{!keys.length && <p>No keys yet.</p>}</div></>}{message && <p className="error-message">{message}</p>}</section><SiteFooter /></main>;
 }
 
 function authMessage(error: unknown): string {

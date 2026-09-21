@@ -29,9 +29,18 @@ Run `pnpm benchmark` to regenerate [`benchmarks/results/latest.json`](benchmarks
 
 The deterministic run uses 120 synthetic tasks and reports fixture bytes, approximate request-plus-result context, task-success delta, optimization latency, per-case requests, optimized calls, and unchanged controls. The current 81.3% tool-result and 81.2% request-plus-result context figures are local fixture measurements—not provider billing—and do not promise more ChatGPT/Codex subscription usage.
 
-The npm package is not published yet. From this repository, run `pnpm build`, then use `node dist/cli/index.js login` and `node dist/cli/index.js connect codex`; the connector registers the exact built CLI path with Codex.
+The public npm package is installable without npm authentication. Run `npx cutdex@latest login` or install it globally with `npm install --global cutdex`; `cutdex login` opens the hosted key page, then verifies the key you paste back into the terminal. The repository includes a tag-based GitHub Actions release using npm trusted publishing, so the maintainer does not need a local npm token after configuring the package's Trusted Publisher as `TaxCollector23/siftline`, workflow `publish.yml`.
 
-The orange CutDex startup card is emitted by the package post-install hook after a successful download. It is shown once per identifiable terminal session; normal CLI commands stay quiet.
+To release a version after that one-time npm setup:
+
+```bash
+git tag v0.3.2
+git push origin v0.3.2
+```
+
+Only publishing needs npm authorization. Public installs and `npx cutdex` do not.
+
+Running bare `cutdex` shows the orange CutDex mark and only the essential connection commands. Subcommands stay quiet. The package post-install card still appears once after a successful download when the terminal exposes a session id.
 
 `pnpm benchmark:real` measures the configured HTTP optimizer path against a small live request set. It uses `CUTDEX_BENCHMARK_API_URL` (default `http://localhost:4318/optimize`) and optional `CUTDEX_API_KEY`, writes `benchmarks/results/real-latest.json`, and never calls a source database or fabricates provider billing.
 

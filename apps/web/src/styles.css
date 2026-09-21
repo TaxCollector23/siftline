@@ -260,6 +260,9 @@ textarea {
 .new-key { border: 1px solid var(--orange); padding: 18px; margin: 18px 0; }
 .new-key strong { display: block; color: var(--orange); margin-bottom: 12px; }
 .new-key code { font: 13px 'Geist Mono', monospace; overflow-wrap: anywhere; }
+.new-key-value { display: flex; align-items: center; gap: 18px; }
+.new-key-value code { flex: 1; }
+.new-key-value button { flex: 0 0 auto; }
 .key-list { border-top: 1px solid var(--ink); }
 .key-list > div {
   display: grid;
@@ -297,5 +300,6 @@ textarea {
   .play-grid { grid-template-columns: 1fr; }
   .output { grid-column: auto; }
   .key-list > div { grid-template-columns: 1fr 1fr; }
+  .new-key-value { align-items: stretch; flex-direction: column; }
   .footer { gap: 12px; flex-wrap: wrap; }
 }

@@ -1,0 +1,30 @@
+name: Publish cutdex
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.14.0"
+          registry-url: "https://registry.npmjs.org"
+          cache: "npm"
+      - name: Enable pnpm
+        run: corepack enable && corepack prepare pnpm@11.6.0 --activate
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Verify
+        run: pnpm test && pnpm typecheck && pnpm build
+      - name: Publish with npm trusted publishing
+        run: npm publish --access public

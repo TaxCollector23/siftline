@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { compactToolResult, compareUsage, optimizeToolCall, type OptimizeInput, type OptimizationResult, type UsageSnapshot } from "@cutdex/core";
 import { agentsPath, codexHome, codexInstalled, cutdexMcpName, cutdexMcpRegistered, hasCutdexInstructions, installCutdexInstructions, removeCutdexInstructions } from "./codex.js";
 
-const version = "0.3.1";
+const version = "0.3.2";
 const root = resolve(fileURLToPath(import.meta.url), "../../..");
 const dashboardPort = 4317;
 const proxyPort = 4318;
@@ -104,8 +104,24 @@ async function readSecret(prompt: string): Promise<string> {
   });
 }
 
+function openLoginPage(url: string): boolean {
+  if (process.env.CUTDEX_NO_BROWSER === "1") return false;
+  const result = process.platform === "win32"
+    ? spawnSync("cmd", ["/c", "start", "", url], { stdio: "ignore", windowsHide: true })
+    : process.platform === "darwin"
+      ? spawnSync("open", [url], { stdio: "ignore" })
+      : spawnSync("xdg-open", [url], { stdio: "ignore" });
+  return result.status === 0 && !result.error;
+}
+
 async function login(passedKey?: string): Promise<void> {
-  const apiKey = passedKey?.trim() || await readSecret("Paste your Cutdex API key: ");
+  let apiKey = passedKey?.trim();
+  if (!apiKey) {
+    const url = `${defaultApiUrl}/account?from=cli`;
+    const opened = openLoginPage(url);
+    console.log(`${opened ? "Opened" : "Open"} ${url}\nSign in with Google, create a key, copy it, then paste it here.`);
+    apiKey = await readSecret("Paste your Cutdex API key: ");
+  }
   if (!apiKey) throw new Error("No API key provided.");
   const current = readConfig();
   const response = await fetch(`${current.apiUrl.replace(/\/$/, "")}/api/v1/auth/verify`, { headers: { authorization: `Bearer ${apiKey}` } });
@@ -212,8 +228,24 @@ async function mcp(): Promise<void> {
   });
 }
 
+function startupArt(): string {
+  const orange = process.stdout.isTTY ? "\u001b[38;5;208m" : "";
+  const reset = process.stdout.isTTY ? "\u001b[0m" : "";
+  return `${orange}  ██████╗██╗   ██╗████████╗██████╗ ███████╗██╗  ██╗
+ ██╔════╝██║   ██║╚══██╔══╝██╔══██╗██╔════╝╚██╗██╔╝
+ ██║     ██║   ██║   ██║   ██║  ██║█████╗   ╚███╔╝
+ ██║     ██║   ██║   ██║   ██║  ██║██╔══╝   ██╔██╗
+ ╚██████╗╚██████╔╝   ██║   ██████╔╝███████╗██╔╝ ██╗
+  ╚═════╝ ╚═════╝    ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═╝${reset}\n\n  CutDex · source-side Codex request optimizer`;
+}
+
 function help(): void {
-  console.log("Usage:\n  cutdex login [api-key]\n  cutdex logout\n  cutdex status\n  cutdex connect codex\n  cutdex disconnect codex\n  cutdex mcp\n  cutdex start\n  cutdex bench\n  cutdex analyze <traces.jsonl> [--input-price N --output-price N]\n  cutdex compact <result.json> --task \"...\"\n  cutdex optimize <trace.json>\n  cutdex report\n  cutdex doctor");
+  console.log("Essential commands:\n  cutdex login           Open the key page and save your API key\n  cutdex connect codex   Register the Codex integration\n  cutdex status          Check authentication and quota\n  cutdex doctor          Check the local integration\n  cutdex logout          Remove the local credential");
+}
+
+function welcome(): void {
+  console.log(`${startupArt()}\n\n`);
+  help();
 }
 
 type RawTrace = { id?: string; variant?: string; mode?: string; task?: string; tool?: { name?: string }; request?: { query?: string }; usage?: unknown; comparison?: { baseline?: unknown; cutdex?: unknown } };
@@ -281,7 +313,8 @@ function compact(target: string): void {
 }
 
 async function main(): Promise<void> {
-  const command = process.argv[2] ?? "--help";
+  const command = process.argv[2];
+  if (!command) { welcome(); return }
   if (command === "mcp") { await mcp(); return }
   if (command === "--help" || command === "help") { help(); return }
   if (command === "login") { await login(process.argv[3]); return }
