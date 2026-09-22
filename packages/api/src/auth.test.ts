@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { consumeRateLimit, generateApiKey, hashApiKeySecret, parseApiKey, safeHashEqual } from "./index.js";
+import { consumeRateLimit, generateApiKey, hashApiKeySecret, inspectRateLimit, parseApiKey, safeHashEqual } from "./index.js";
 
 describe("api key security", () => {
   it("generates parseable keys and stores only a hash", () => {
@@ -24,5 +24,11 @@ describe("rate limits", () => {
     expect(blocked).toMatchObject({ allowed: false, reason: "minute" });
     const nextMinute = consumeRateLimit(first, { rpm: 1, monthly: 2 }, new Date("2026-09-15T12:31:00.000Z"));
     expect(nextMinute.allowed).toBe(true);
+  });
+
+  it("can inspect remaining quota without consuming a request", () => {
+    const now = new Date("2026-09-15T12:30:10.000Z");
+    const used = consumeRateLimit({}, { rpm: 2, monthly: 3 }, now);
+    expect(inspectRateLimit(used, { rpm: 2, monthly: 3 }, now)).toMatchObject({ allowed: true, minuteCount: 1, remainingMinute: 1, monthCount: 1, remainingMonth: 2 });
   });
 });

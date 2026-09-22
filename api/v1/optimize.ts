@@ -9,9 +9,9 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
   if (!bodySizeOkay(req.body)) { res.status(413).json({ error: "request_too_large" }); return }
   const token = bearerToken(req); if (!token) { res.status(401).json({ error: "missing_api_key" }); return }
   try {
-    const key = await authorizeApiKey(token);
     const input = req.body as OptimizeInput;
     if (!input || typeof input.task !== "string" || !input.tool || typeof input.tool.name !== "string" || !input.request || typeof input.request !== "object") { res.status(400).json({ error: "invalid_request", message: "Expected task, tool, and request." }); return }
+    const key = await authorizeApiKey(token);
     const result = optimizeToolCall(input);
     res.setHeader("X-RateLimit-Remaining-Minute", String(key.rate.remainingMinute));
     res.setHeader("X-RateLimit-Remaining-Month", String(key.rate.remainingMonth));

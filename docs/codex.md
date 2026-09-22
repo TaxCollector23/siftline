@@ -1,18 +1,19 @@
 # Connect Codex
 
-Official Codex clients support local STDIO MCP servers. Siftline uses that connection as an explicit request optimizer.
+Official Codex clients support local STDIO MCP servers. Cutdex uses that connection as an explicit local request optimizer.
 
 ```bash
-npx siftline@latest login
-siftline connect codex
+npx cutdex@latest connect codex
 ```
 
 The second command registers:
 
 ```bash
-codex mcp add siftline -- npx -y siftline@latest mcp
+codex mcp add cutdex -- npx -y cutdex@latest mcp
 ```
 
-Restart Codex and run `/mcp` to verify the server. Before a broad read-only SQL or GraphQL-style call, Codex can call `siftline_optimize`, then execute the returned `optimizedRequest` with the original source tool.
+Restart Codex and run `/mcp` to verify the server. Before a broad read-only SQL or GraphQL-style call, Codex can call `cutdex_optimize`, then execute the returned `optimizedRequest` with the original source tool.
 
-Important boundary: MCP adds a tool. It does not silently intercept Codex's built-in shell, browser, filesystem, or other MCP servers. Automatic interception requires an application-level middleware adapter around the actual tool executor.
+The MCP server is local-first. It makes no model request and no OpenAI API call, so model usage remains in the Codex client you signed into. Verify the active allowance with `/status`.
+
+Important boundary: MCP adds a tool. It does not silently intercept Codex's built-in shell, browser, filesystem, or other MCP servers. Automatic interception requires an application-level middleware adapter around the actual tool executor. `executeWithCutdex` provides that local pre-execution boundary for custom agents.

@@ -14,7 +14,7 @@ export interface ApiResponse {
 
 export function prepareResponse(req: ApiRequest, res: ApiResponse): boolean {
   const origin = typeof req.headers.origin === "string" ? req.headers.origin : "";
-  const allowed = origin === "https://siftline-omega.vercel.app" || origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:");
+  const allowed = origin === "https://siftline-omega.vercel.app" || origin === "https://cutdex.vercel.app" || origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:");
   if (allowed) res.setHeader("Access-Control-Allow-Origin", origin);
   res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");

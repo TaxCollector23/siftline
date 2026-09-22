@@ -11,4 +11,5 @@ export interface SavingsEstimate {
   note: string;
 }
 export interface OptimizationResult { originalRequest: OptimizeInput["request"]; optimizedRequest: OptimizeInput["request"]; applied: PassResult[]; skipped: PassResult[]; estimatedSavings: SavingsEstimate; confidence: "high" | "medium" | "low"; safety: "safe" | "passed-through"; explanation: string[] }
+export interface ExecutionResult<T> { optimization: OptimizationResult; response: T }
 export interface Trace { id: string; task: string; tool: ToolDescriptor; request: { query?: string; [key: string]: unknown }; response?: unknown; usage?: { inputTokens?: number; outputTokens?: number }; timestamp: string }

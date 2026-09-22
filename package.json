@@ -1,9 +1,9 @@
 {
-  "name": "siftline",
-  "version": "0.2.0",
-  "description": "Conservative query optimization for AI tool calls.",
+  "name": "cutdex",
+  "version": "0.3.0",
+  "description": "Local, conservative context optimization for Codex tool calls.",
   "type": "module",
-  "bin": { "siftline": "dist/cli/index.js" },
+  "bin": { "cutdex": "dist/cli/index.js", "siftline": "dist/cli/index.js" },
   "files": ["dist", "README.md", "LICENSE"],
   "scripts": {
     "dev": "concurrently \"pnpm --dir apps/web dev\" \"pnpm benchmark:watch\"",

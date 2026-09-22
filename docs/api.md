@@ -1,6 +1,6 @@
-# Hosted API
+# Hosted API (optional)
 
-Siftline is designed to run as middleware immediately before a read-only tool call. It returns an optimized request; the caller remains responsible for executing that request against its database, API, or MCP tool.
+Cutdex is designed to run as local middleware immediately before a read-only tool call. It returns an optimized request; the caller remains responsible for executing that request against its database, API, or MCP tool. Cutdex does not call a model or the OpenAI API.
 
 ## Authentication
 
@@ -10,7 +10,7 @@ Send a Siftline API key as a bearer token:
 Authorization: Bearer sift_live_...
 ```
 
-Keys are displayed once. The service stores a peppered SHA-256 hash, not the original secret. Accounts can have three active keys. The default quota is 60 requests per minute and 10,000 requests per month, enforced per key with a Firestore transaction.
+Keys are displayed once. The optional hosted service stores a peppered SHA-256 hash, not the original secret. Accounts can have three active keys. The default quota is 60 requests per minute and 10,000 requests per month, enforced per key with a Firestore transaction. Local MCP mode does not require a key.
 
 ## Optimize
 

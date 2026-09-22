@@ -1,5 +1,5 @@
 import { createSign, createVerify } from "node:crypto";
-import { consumeRateLimit, hashApiKeySecret, parseApiKey, safeHashEqual, type RateLimitResult } from "../../packages/api/src/index.js";
+import { consumeRateLimit, hashApiKeySecret, inspectRateLimit, parseApiKey, safeHashEqual, type RateLimitResult } from "../../packages/api/src/index.js";
 
 type FirestoreValue = { stringValue?: string; integerValue?: string; timestampValue?: string; booleanValue?: boolean };
 type FirestoreDocument = { name: string; fields?: Record<string, FirestoreValue>; updateTime?: string };
@@ -57,16 +57,26 @@ async function rollback(transaction: string): Promise<void> {
   await firebaseFetch(`https://firestore.googleapis.com/v1/projects/${projectId()}/databases/(default)/documents:rollback`, { method: "POST", body: JSON.stringify({ transaction }) }).catch(() => undefined);
 }
 
-export async function authorizeApiKey(value: string): Promise<AuthorizedKey> {
+export async function authorizeApiKey(value: string, options: { consume?: boolean } = {}): Promise<AuthorizedKey> {
+  const consume = options.consume ?? true;
   const devKeys = (process.env.SIFTLINE_DEV_API_KEYS ?? "").split(",").map((key) => key.trim()).filter(Boolean);
   if (devKeys.includes(value)) {
-    const rate = consumeRateLimit(devUsage.get(value) ?? {});
-    if (!rate.allowed) throw Object.assign(new Error("Rate limit exceeded"), { statusCode: 429, rate });
-    devUsage.set(value, rate);
+    const current = devUsage.get(value) ?? {};
+    const rate = consume ? consumeRateLimit(current) : inspectRateLimit(current);
+    if (consume && !rate.allowed) throw Object.assign(new Error("Rate limit exceeded"), { statusCode: 429, rate });
+    if (consume) devUsage.set(value, rate);
     return { id: "dev", userId: "development", name: "Development key", lastFour: value.slice(-4), rate };
   }
   const parsed = parseApiKey(value); if (!parsed) throw Object.assign(new Error("Invalid API key"), { statusCode: 401 });
   const pepper = required("SIFTLINE_KEY_PEPPER");
+  if (!consume) {
+    const response = await firebaseFetch(`/apiKeys/${encodeURIComponent(parsed.id)}`);
+    if (!response.ok) throw Object.assign(new Error("Invalid API key"), { statusCode: 401 });
+    const document = await response.json() as FirestoreDocument;
+    const record = decodeKey(document);
+    if (record.status !== "active" || !safeHashEqual(record.hash, hashApiKeySecret(parsed.secret, pepper))) throw Object.assign(new Error("Invalid API key"), { statusCode: 401 });
+    return { id: record.id, userId: record.userId, name: record.name, lastFour: record.lastFour, rate: inspectRateLimit(record, { rpm: record.rpmLimit, monthly: record.monthlyLimit }) };
+  }
   const begin = await firebaseFetch(`https://firestore.googleapis.com/v1/projects/${projectId()}/databases/(default)/documents:beginTransaction`, { method: "POST", body: JSON.stringify({ options: { readWrite: {} } }) });
   if (!begin.ok) throw new Error("Could not start rate-limit transaction");
   const { transaction } = await begin.json() as { transaction: string };

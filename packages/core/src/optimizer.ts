@@ -3,7 +3,7 @@ import { optimizeGraphql, printGraphql } from "./graphql.js";
 import type { OptimizeInput, OptimizationResult, PassResult } from "./types.js";
 const defaultFields = ["id", "status", "total", "created_at"];
 const noChange = { bytes: 0, inputTokens: 0, percent: 0, measurement: "no_change" as const, note: "The request was not changed." };
-const notMeasured = { bytes: null, inputTokens: null, percent: null, measurement: "not_measured" as const, note: "Siftline did not observe the tool result. Measure before/after result bytes or provider usage in your adapter." };
+const notMeasured = { bytes: null, inputTokens: null, percent: null, measurement: "not_measured" as const, note: "Cutdex did not observe the tool result. Measure before/after result bytes or provider usage in your adapter." };
 function hasAny(task: string, words: string[]): boolean { const normalized = task.toLowerCase(); return words.some((word) => normalized.includes(word)) }
 function fieldsFromTask(task: string): string[] { const fields = new Set<string>(["id"]); const normalized = task.toLowerCase(); if (hasAny(normalized, ["status", "failed", "open", "state"])) fields.add("status"); if (hasAny(normalized, ["total", "amount", "price", "cost"])) fields.add("total"); if (hasAny(normalized, ["customer", "name"])) fields.add("customer_name"); if (hasAny(normalized, ["error", "reason"])) fields.add("error"); if (hasAny(normalized, ["recent", "newest", "latest", "created"])) fields.add("created_at"); return fields.size === 1 ? defaultFields.slice(0, 3) : [...fields] }
 function pass(name: string, before: string, after: string, reason: string, expectedBenefit: string): PassResult { return { name, before, after, reason, expectedBenefit, confidence: "high" } }

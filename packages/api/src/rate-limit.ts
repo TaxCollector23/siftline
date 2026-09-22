@@ -14,6 +14,18 @@ export interface RateLimitResult extends RateLimitState {
   remainingMonth: number;
 }
 
+export function inspectRateLimit(state: Partial<RateLimitState>, limits: { rpm?: number; monthly?: number } = {}, now = new Date()): RateLimitResult {
+  const minuteKey = currentMinuteKey(now);
+  const monthKey = currentMonthKey(now);
+  const rpm = limits.rpm ?? DEFAULT_RPM_LIMIT;
+  const monthly = limits.monthly ?? DEFAULT_MONTHLY_LIMIT;
+  const minuteCount = state.minuteKey === minuteKey ? (state.minuteCount ?? 0) : 0;
+  const monthCount = state.monthKey === monthKey ? (state.monthCount ?? 0) : 0;
+  const minuteBlocked = minuteCount >= rpm;
+  const monthBlocked = monthCount >= monthly;
+  return { allowed: !minuteBlocked && !monthBlocked, reason: minuteBlocked ? "minute" : monthBlocked ? "month" : undefined, minuteKey, minuteCount, monthKey, monthCount, remainingMinute: Math.max(0, rpm - minuteCount), remainingMonth: Math.max(0, monthly - monthCount) };
+}
+
 export function consumeRateLimit(
   state: Partial<RateLimitState>,
   limits: { rpm?: number; monthly?: number } = {},
