@@ -1,6 +1,6 @@
 {
-  "name": "@siftline/cli",
-  "version": "0.3.0",
+  "name": "@cutdex/cli",
+  "version": "0.3.2",
   "type": "module",
-  "dependencies": { "@siftline/core": "workspace:*" }
+  "dependencies": { "@cutdex/core": "workspace:*" }
 }

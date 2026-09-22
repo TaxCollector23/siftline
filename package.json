@@ -1,10 +1,11 @@
 {
   "name": "cutdex",
-  "version": "0.3.0",
-  "description": "Local, conservative context optimization for Codex tool calls.",
+  "version": "0.3.2",
+  "description": "Conservative read optimization for Codex tool calls.",
   "type": "module",
-  "bin": { "cutdex": "dist/cli/index.js", "siftline": "dist/cli/index.js" },
-  "files": ["dist", "README.md", "LICENSE"],
+  "bin": { "cutdex": "dist/cli/index.js" },
+  "publishConfig": { "access": "public" },
+  "files": ["dist", "README.md", "LICENSE", "scripts/postinstall.mjs"],
   "scripts": {
     "dev": "concurrently \"pnpm --dir apps/web dev\" \"pnpm benchmark:watch\"",
     "build": "pnpm build:core && pnpm build:cli && pnpm --dir apps/web build",
@@ -14,8 +15,10 @@
     "lint": "eslint packages apps api scripts --ext .ts,.tsx",
     "test": "vitest run",
     "benchmark": "tsx scripts/benchmark.ts",
+    "benchmark:real": "tsx scripts/benchmark-real.ts",
     "benchmark:watch": "tsx scripts/benchmark.ts --watch",
     "prepublishOnly": "pnpm build:core && pnpm build:cli",
+    "postinstall": "node scripts/postinstall.mjs",
     "start": "node dist/cli/index.js start"
   },
   "workspaces": ["apps/*", "packages/*"],

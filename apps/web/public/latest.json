@@ -1,32 +1,3045 @@
 {
-  "version": "0.3.0",
-  "measurementType": "synthetic_estimate",
+  "version": "0.3.2",
+  "measurementType": "deterministic_fixture_estimate",
   "limitations": [
-    "Fixture bytes and task outcomes are deterministic simulations, not provider telemetry.",
-    "Estimated context reduction does not prove lower provider billing or increased subscription usage."
+    "Returned bytes and task outcomes come from deterministic local fixtures, not provider telemetry or real source databases.",
+    "Approximate request and result tokens use UTF-8 JSON bytes divided by four; provider tokenization may differ.",
+    "Context reduction excludes system prompts, conversation history, reasoning, generated output, and provider billing.",
+    "Optimization latency is measured locally and varies by hardware."
   ],
-  "generatedAt": "2026-09-22T04:13:34.145Z",
+  "generatedAt": "2026-09-21T04:15:48.112Z",
   "sampleCount": 120,
   "categories": [
     "sql",
-    "issues",
-    "logs",
+    "sql-aggregate",
+    "sql-unsupported",
+    "sql-ambiguous",
     "control",
+    "write",
+    "graphql",
+    "structured-api",
     "already-optimal"
   ],
-  "costReductionPercent": 65.6,
-  "toolTokenReductionPercent": 65.6,
-  "dataReductionPercent": 65.6,
+  "toolTokenReductionPercent": 81.3,
+  "estimatedContextReductionPercent": 81.2,
+  "estimatedRequestTokenDeltaPercent": 9.7,
+  "baselineContextTokens": 5383330,
+  "cutdexContextTokens": 1012760,
+  "estimatedInputCostUsd": {
+    "baseline": 16.15,
+    "cutdex": 3.04,
+    "saved": 13.11,
+    "inputPerMillion": 3
+  },
+  "dataReductionPercent": 81.3,
   "baselinePassed": 115,
   "optimizedPassed": 115,
   "taskSuccessBaseline": 95.8,
   "taskSuccessOptimized": 95.8,
   "taskSuccessDelta": 0,
-  "callsOptimized": 72,
-  "correctlyUnchanged": 48,
-  "pricing": {
-    "model": "illustrative",
-    "inputPerMillion": 3,
-    "outputPerMillion": 15
-  }
+  "callsOptimized": 70,
+  "correctlyUnchanged": 50,
+  "medianOptimizationLatencyMs": 0.008,
+  "cases": [
+    {
+      "id": "sql-failed-orders-001",
+      "category": "sql",
+      "task": "Find the five most recent failed enterprise orders",
+      "originalRequest": {
+        "query": "SELECT * FROM orders"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, created_at FROM orders WHERE status = 'failed' AND customer_tier = 'enterprise' ORDER BY created_at DESC LIMIT 5;"
+      },
+      "baselineBytes": 999001,
+      "cutdexBytes": 241,
+      "baselineApproximateToolResultTokens": 249751,
+      "cutdexApproximateToolResultTokens": 61,
+      "baselineApproximateToolContextTokens": 249792,
+      "cutdexApproximateToolContextTokens": 130,
+      "baselineApproximateRequestTokens": 41,
+      "cutdexApproximateRequestTokens": 69,
+      "optimizationLatencyMs": 0.822,
+      "baselineTaskSuccess": false,
+      "cutdexTaskSuccess": false,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, status, created_at. PREDICATE: The task explicitly asks for status = 'failed' and customer_tier = 'enterprise'. SORT: The task asks for the newest records. LIMIT: The task asks for at most 5 records."
+    },
+    {
+      "id": "sql-open-issues-002",
+      "category": "sql",
+      "task": "Give me the titles of the first ten open security issues",
+      "originalRequest": {
+        "query": "SELECT * FROM issues"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, title, number FROM issues WHERE status = 'open' AND label = 'security' LIMIT 10;"
+      },
+      "baselineBytes": 231921,
+      "cutdexBytes": 641,
+      "baselineApproximateToolResultTokens": 57981,
+      "cutdexApproximateToolResultTokens": 161,
+      "baselineApproximateToolContextTokens": 58023,
+      "cutdexApproximateToolContextTokens": 223,
+      "baselineApproximateRequestTokens": 42,
+      "cutdexApproximateRequestTokens": 62,
+      "optimizationLatencyMs": 0.121,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, status, title, number. PREDICATE: The task explicitly asks for status = 'open' and label = 'security'. LIMIT: The task asks for at most 10 records."
+    },
+    {
+      "id": "sql-error-logs-003",
+      "category": "sql",
+      "task": "Find the latest error logs for checkout",
+      "originalRequest": {
+        "query": "SELECT * FROM logs"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, error, created_at FROM logs ORDER BY created_at DESC;"
+      },
+      "baselineBytes": 406201,
+      "cutdexBytes": 29401,
+      "baselineApproximateToolResultTokens": 101551,
+      "cutdexApproximateToolResultTokens": 7351,
+      "baselineApproximateToolContextTokens": 101589,
+      "cutdexApproximateToolContextTokens": 7400,
+      "baselineApproximateRequestTokens": 38,
+      "cutdexApproximateRequestTokens": 49,
+      "optimizationLatencyMs": 0.046,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, error, created_at. SORT: The task asks for the newest records."
+    },
+    {
+      "id": "sql-total-failed-004",
+      "category": "sql-aggregate",
+      "task": "Count failed payments",
+      "originalRequest": {
+        "query": "SELECT COUNT(id) FROM payments"
+      },
+      "optimizedRequest": {
+        "query": "SELECT COUNT(id) FROM payments WHERE status = 'failed';"
+      },
+      "baselineBytes": 19,
+      "cutdexBytes": 19,
+      "baselineApproximateToolResultTokens": 5,
+      "cutdexApproximateToolResultTokens": 5,
+      "baselineApproximateToolContextTokens": 44,
+      "cutdexApproximateToolContextTokens": 50,
+      "baselineApproximateRequestTokens": 39,
+      "cutdexApproximateRequestTokens": 45,
+      "optimizationLatencyMs": 0.057,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PREDICATE: The task explicitly asks for status = 'failed'."
+    },
+    {
+      "id": "sql-join-005",
+      "category": "sql-unsupported",
+      "task": "Show recent orders with customer email",
+      "originalRequest": {
+        "query": "SELECT * FROM orders JOIN customers ON orders.customer_id = customers.id"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM orders JOIN customers ON orders.customer_id = customers.id"
+      },
+      "baselineBytes": 175501,
+      "cutdexBytes": 175501,
+      "baselineApproximateToolResultTokens": 43876,
+      "cutdexApproximateToolResultTokens": 43876,
+      "baselineApproximateToolContextTokens": 43930,
+      "cutdexApproximateToolContextTokens": 43930,
+      "baselineApproximateRequestTokens": 54,
+      "cutdexApproximateRequestTokens": 54,
+      "optimizationLatencyMs": 0.02,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The SQL parser could not establish a safe SELECT AST."
+    },
+    {
+      "id": "sql-ambiguous-006",
+      "category": "sql-ambiguous",
+      "task": "Summarize the relevant records",
+      "originalRequest": {
+        "query": "SELECT * FROM orders UNION SELECT * FROM archived_orders"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM orders UNION SELECT * FROM archived_orders"
+      },
+      "baselineBytes": 143701,
+      "cutdexBytes": 143701,
+      "baselineApproximateToolResultTokens": 35926,
+      "cutdexApproximateToolResultTokens": 35926,
+      "baselineApproximateToolContextTokens": 35973,
+      "cutdexApproximateToolContextTokens": 35973,
+      "baselineApproximateRequestTokens": 47,
+      "cutdexApproximateRequestTokens": 47,
+      "optimizationLatencyMs": 0.009,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The SQL parser could not establish a safe SELECT AST."
+    },
+    {
+      "id": "sql-control-007",
+      "category": "control",
+      "task": "Return every field for the audit export",
+      "originalRequest": {
+        "query": "SELECT * FROM audit_events"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM audit_events"
+      },
+      "baselineBytes": 32561,
+      "cutdexBytes": 32561,
+      "baselineApproximateToolResultTokens": 8141,
+      "cutdexApproximateToolResultTokens": 8141,
+      "baselineApproximateToolContextTokens": 8182,
+      "cutdexApproximateToolContextTokens": 8182,
+      "baselineApproximateRequestTokens": 41,
+      "cutdexApproximateRequestTokens": 41,
+      "optimizationLatencyMs": 0.013,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The task explicitly asks for the complete record shape."
+    },
+    {
+      "id": "sql-write-008",
+      "category": "write",
+      "task": "Delete failed orders",
+      "originalRequest": {
+        "query": "DELETE FROM orders WHERE status = 'failed'"
+      },
+      "optimizedRequest": {
+        "query": "DELETE FROM orders WHERE status = 'failed'"
+      },
+      "baselineBytes": 33,
+      "cutdexBytes": 33,
+      "baselineApproximateToolResultTokens": 9,
+      "cutdexApproximateToolResultTokens": 9,
+      "baselineApproximateToolContextTokens": 49,
+      "cutdexApproximateToolContextTokens": 49,
+      "baselineApproximateRequestTokens": 40,
+      "cutdexApproximateRequestTokens": 40,
+      "optimizationLatencyMs": 0.001,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "Write and unknown tools pass through unchanged."
+    },
+    {
+      "id": "graphql-issues-009",
+      "category": "graphql",
+      "task": "Show issue title and state",
+      "originalRequest": {
+        "query": "query Issues { issues { number title state labels avatarUrl updatedAt } }"
+      },
+      "optimizedRequest": {
+        "query": "query Issues {\n  number\n  title\n  state\n}"
+      },
+      "baselineBytes": 12961,
+      "cutdexBytes": 12961,
+      "baselineApproximateToolResultTokens": 3241,
+      "cutdexApproximateToolResultTokens": 3241,
+      "baselineApproximateToolContextTokens": 3290,
+      "cutdexApproximateToolContextTokens": 3283,
+      "baselineApproximateRequestTokens": 49,
+      "cutdexApproximateRequestTokens": 42,
+      "optimizationLatencyMs": 0.094,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "GRAPHQL_PROJECTION: Kept fields named by the task: number, title, state."
+    },
+    {
+      "id": "graphql-repos-010",
+      "category": "graphql",
+      "task": "Show repository name and URL",
+      "originalRequest": {
+        "query": "query Repositories { repositories { name url description languages stars } }"
+      },
+      "optimizedRequest": {
+        "query": "query Repositories {\n  name\n  url\n}"
+      },
+      "baselineBytes": 7121,
+      "cutdexBytes": 7121,
+      "baselineApproximateToolResultTokens": 1781,
+      "cutdexApproximateToolResultTokens": 1781,
+      "baselineApproximateToolContextTokens": 1831,
+      "cutdexApproximateToolContextTokens": 1822,
+      "baselineApproximateRequestTokens": 50,
+      "cutdexApproximateRequestTokens": 41,
+      "optimizationLatencyMs": 0.014,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "GRAPHQL_PROJECTION: Kept fields named by the task: name, url."
+    },
+    {
+      "id": "api-users-011",
+      "category": "structured-api",
+      "task": "List the first five active users with email",
+      "originalRequest": {
+        "query": "SELECT * FROM users"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, email FROM users LIMIT 5;"
+      },
+      "baselineBytes": 141751,
+      "cutdexBytes": 151,
+      "baselineApproximateToolResultTokens": 35438,
+      "cutdexApproximateToolResultTokens": 38,
+      "baselineApproximateToolContextTokens": 35480,
+      "cutdexApproximateToolContextTokens": 84,
+      "baselineApproximateRequestTokens": 42,
+      "cutdexApproximateRequestTokens": 46,
+      "optimizationLatencyMs": 0.04,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, email. LIMIT: The task asks for at most 5 records."
+    },
+    {
+      "id": "already-optimal-012",
+      "category": "already-optimal",
+      "task": "Find the five most recent failed payments",
+      "originalRequest": {
+        "query": "SELECT id, status, total, created_at FROM payments WHERE status = 'failed' ORDER BY created_at DESC LIMIT 5"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, total, created_at FROM payments WHERE status = 'failed' ORDER BY created_at DESC LIMIT 5"
+      },
+      "baselineBytes": 346,
+      "cutdexBytes": 346,
+      "baselineApproximateToolResultTokens": 87,
+      "cutdexApproximateToolResultTokens": 87,
+      "baselineApproximateToolContextTokens": 150,
+      "cutdexApproximateToolContextTokens": 150,
+      "baselineApproximateRequestTokens": 63,
+      "cutdexApproximateRequestTokens": 63,
+      "optimizationLatencyMs": 0.035,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "No safe transformation found."
+    },
+    {
+      "id": "sql-failed-orders-013",
+      "category": "sql",
+      "task": "Find the five most recent failed enterprise orders",
+      "originalRequest": {
+        "query": "SELECT * FROM orders"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, created_at FROM orders WHERE status = 'failed' AND customer_tier = 'enterprise' ORDER BY created_at DESC LIMIT 5;"
+      },
+      "baselineBytes": 999001,
+      "cutdexBytes": 241,
+      "baselineApproximateToolResultTokens": 249751,
+      "cutdexApproximateToolResultTokens": 61,
+      "baselineApproximateToolContextTokens": 249792,
+      "cutdexApproximateToolContextTokens": 130,
+      "baselineApproximateRequestTokens": 41,
+      "cutdexApproximateRequestTokens": 69,
+      "optimizationLatencyMs": 0.024,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, status, created_at. PREDICATE: The task explicitly asks for status = 'failed' and customer_tier = 'enterprise'. SORT: The task asks for the newest records. LIMIT: The task asks for at most 5 records."
+    },
+    {
+      "id": "sql-open-issues-014",
+      "category": "sql",
+      "task": "Give me the titles of the first ten open security issues",
+      "originalRequest": {
+        "query": "SELECT * FROM issues"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, title, number FROM issues WHERE status = 'open' AND label = 'security' LIMIT 10;"
+      },
+      "baselineBytes": 231921,
+      "cutdexBytes": 641,
+      "baselineApproximateToolResultTokens": 57981,
+      "cutdexApproximateToolResultTokens": 161,
+      "baselineApproximateToolContextTokens": 58023,
+      "cutdexApproximateToolContextTokens": 223,
+      "baselineApproximateRequestTokens": 42,
+      "cutdexApproximateRequestTokens": 62,
+      "optimizationLatencyMs": 0.024,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, status, title, number. PREDICATE: The task explicitly asks for status = 'open' and label = 'security'. LIMIT: The task asks for at most 10 records."
+    },
+    {
+      "id": "sql-error-logs-015",
+      "category": "sql",
+      "task": "Find the latest error logs for checkout",
+      "originalRequest": {
+        "query": "SELECT * FROM logs"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, error, created_at FROM logs ORDER BY created_at DESC;"
+      },
+      "baselineBytes": 406201,
+      "cutdexBytes": 29401,
+      "baselineApproximateToolResultTokens": 101551,
+      "cutdexApproximateToolResultTokens": 7351,
+      "baselineApproximateToolContextTokens": 101589,
+      "cutdexApproximateToolContextTokens": 7400,
+      "baselineApproximateRequestTokens": 38,
+      "cutdexApproximateRequestTokens": 49,
+      "optimizationLatencyMs": 0.019,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, error, created_at. SORT: The task asks for the newest records."
+    },
+    {
+      "id": "sql-total-failed-016",
+      "category": "sql-aggregate",
+      "task": "Count failed payments",
+      "originalRequest": {
+        "query": "SELECT COUNT(id) FROM payments"
+      },
+      "optimizedRequest": {
+        "query": "SELECT COUNT(id) FROM payments WHERE status = 'failed';"
+      },
+      "baselineBytes": 19,
+      "cutdexBytes": 19,
+      "baselineApproximateToolResultTokens": 5,
+      "cutdexApproximateToolResultTokens": 5,
+      "baselineApproximateToolContextTokens": 44,
+      "cutdexApproximateToolContextTokens": 50,
+      "baselineApproximateRequestTokens": 39,
+      "cutdexApproximateRequestTokens": 45,
+      "optimizationLatencyMs": 0.026,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PREDICATE: The task explicitly asks for status = 'failed'."
+    },
+    {
+      "id": "sql-join-017",
+      "category": "sql-unsupported",
+      "task": "Show recent orders with customer email",
+      "originalRequest": {
+        "query": "SELECT * FROM orders JOIN customers ON orders.customer_id = customers.id"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM orders JOIN customers ON orders.customer_id = customers.id"
+      },
+      "baselineBytes": 175501,
+      "cutdexBytes": 175501,
+      "baselineApproximateToolResultTokens": 43876,
+      "cutdexApproximateToolResultTokens": 43876,
+      "baselineApproximateToolContextTokens": 43930,
+      "cutdexApproximateToolContextTokens": 43930,
+      "baselineApproximateRequestTokens": 54,
+      "cutdexApproximateRequestTokens": 54,
+      "optimizationLatencyMs": 0.009,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The SQL parser could not establish a safe SELECT AST."
+    },
+    {
+      "id": "sql-ambiguous-018",
+      "category": "sql-ambiguous",
+      "task": "Summarize the relevant records",
+      "originalRequest": {
+        "query": "SELECT * FROM orders UNION SELECT * FROM archived_orders"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM orders UNION SELECT * FROM archived_orders"
+      },
+      "baselineBytes": 143701,
+      "cutdexBytes": 143701,
+      "baselineApproximateToolResultTokens": 35926,
+      "cutdexApproximateToolResultTokens": 35926,
+      "baselineApproximateToolContextTokens": 35973,
+      "cutdexApproximateToolContextTokens": 35973,
+      "baselineApproximateRequestTokens": 47,
+      "cutdexApproximateRequestTokens": 47,
+      "optimizationLatencyMs": 0.004,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The SQL parser could not establish a safe SELECT AST."
+    },
+    {
+      "id": "sql-control-019",
+      "category": "control",
+      "task": "Return every field for the audit export",
+      "originalRequest": {
+        "query": "SELECT * FROM audit_events"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM audit_events"
+      },
+      "baselineBytes": 32561,
+      "cutdexBytes": 32561,
+      "baselineApproximateToolResultTokens": 8141,
+      "cutdexApproximateToolResultTokens": 8141,
+      "baselineApproximateToolContextTokens": 8182,
+      "cutdexApproximateToolContextTokens": 8182,
+      "baselineApproximateRequestTokens": 41,
+      "cutdexApproximateRequestTokens": 41,
+      "optimizationLatencyMs": 0.006,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The task explicitly asks for the complete record shape."
+    },
+    {
+      "id": "sql-write-020",
+      "category": "write",
+      "task": "Delete failed orders",
+      "originalRequest": {
+        "query": "DELETE FROM orders WHERE status = 'failed'"
+      },
+      "optimizedRequest": {
+        "query": "DELETE FROM orders WHERE status = 'failed'"
+      },
+      "baselineBytes": 33,
+      "cutdexBytes": 33,
+      "baselineApproximateToolResultTokens": 9,
+      "cutdexApproximateToolResultTokens": 9,
+      "baselineApproximateToolContextTokens": 49,
+      "cutdexApproximateToolContextTokens": 49,
+      "baselineApproximateRequestTokens": 40,
+      "cutdexApproximateRequestTokens": 40,
+      "optimizationLatencyMs": 0.003,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "Write and unknown tools pass through unchanged."
+    },
+    {
+      "id": "graphql-issues-021",
+      "category": "graphql",
+      "task": "Show issue title and state",
+      "originalRequest": {
+        "query": "query Issues { issues { number title state labels avatarUrl updatedAt } }"
+      },
+      "optimizedRequest": {
+        "query": "query Issues {\n  number\n  title\n  state\n}"
+      },
+      "baselineBytes": 12961,
+      "cutdexBytes": 12961,
+      "baselineApproximateToolResultTokens": 3241,
+      "cutdexApproximateToolResultTokens": 3241,
+      "baselineApproximateToolContextTokens": 3290,
+      "cutdexApproximateToolContextTokens": 3283,
+      "baselineApproximateRequestTokens": 49,
+      "cutdexApproximateRequestTokens": 42,
+      "optimizationLatencyMs": 0.014,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "GRAPHQL_PROJECTION: Kept fields named by the task: number, title, state."
+    },
+    {
+      "id": "graphql-repos-022",
+      "category": "graphql",
+      "task": "Show repository name and URL",
+      "originalRequest": {
+        "query": "query Repositories { repositories { name url description languages stars } }"
+      },
+      "optimizedRequest": {
+        "query": "query Repositories {\n  name\n  url\n}"
+      },
+      "baselineBytes": 7121,
+      "cutdexBytes": 7121,
+      "baselineApproximateToolResultTokens": 1781,
+      "cutdexApproximateToolResultTokens": 1781,
+      "baselineApproximateToolContextTokens": 1831,
+      "cutdexApproximateToolContextTokens": 1822,
+      "baselineApproximateRequestTokens": 50,
+      "cutdexApproximateRequestTokens": 41,
+      "optimizationLatencyMs": 0.006,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "GRAPHQL_PROJECTION: Kept fields named by the task: name, url."
+    },
+    {
+      "id": "api-users-023",
+      "category": "structured-api",
+      "task": "List the first five active users with email",
+      "originalRequest": {
+        "query": "SELECT * FROM users"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, email FROM users LIMIT 5;"
+      },
+      "baselineBytes": 141751,
+      "cutdexBytes": 151,
+      "baselineApproximateToolResultTokens": 35438,
+      "cutdexApproximateToolResultTokens": 38,
+      "baselineApproximateToolContextTokens": 35480,
+      "cutdexApproximateToolContextTokens": 84,
+      "baselineApproximateRequestTokens": 42,
+      "cutdexApproximateRequestTokens": 46,
+      "optimizationLatencyMs": 0.02,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, email. LIMIT: The task asks for at most 5 records."
+    },
+    {
+      "id": "already-optimal-024",
+      "category": "already-optimal",
+      "task": "Find the five most recent failed payments",
+      "originalRequest": {
+        "query": "SELECT id, status, total, created_at FROM payments WHERE status = 'failed' ORDER BY created_at DESC LIMIT 5"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, total, created_at FROM payments WHERE status = 'failed' ORDER BY created_at DESC LIMIT 5"
+      },
+      "baselineBytes": 346,
+      "cutdexBytes": 346,
+      "baselineApproximateToolResultTokens": 87,
+      "cutdexApproximateToolResultTokens": 87,
+      "baselineApproximateToolContextTokens": 150,
+      "cutdexApproximateToolContextTokens": 150,
+      "baselineApproximateRequestTokens": 63,
+      "cutdexApproximateRequestTokens": 63,
+      "optimizationLatencyMs": 0.022,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "No safe transformation found."
+    },
+    {
+      "id": "sql-failed-orders-025",
+      "category": "sql",
+      "task": "Find the five most recent failed enterprise orders",
+      "originalRequest": {
+        "query": "SELECT * FROM orders"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, created_at FROM orders WHERE status = 'failed' AND customer_tier = 'enterprise' ORDER BY created_at DESC LIMIT 5;"
+      },
+      "baselineBytes": 999001,
+      "cutdexBytes": 241,
+      "baselineApproximateToolResultTokens": 249751,
+      "cutdexApproximateToolResultTokens": 61,
+      "baselineApproximateToolContextTokens": 249792,
+      "cutdexApproximateToolContextTokens": 130,
+      "baselineApproximateRequestTokens": 41,
+      "cutdexApproximateRequestTokens": 69,
+      "optimizationLatencyMs": 0.027,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, status, created_at. PREDICATE: The task explicitly asks for status = 'failed' and customer_tier = 'enterprise'. SORT: The task asks for the newest records. LIMIT: The task asks for at most 5 records."
+    },
+    {
+      "id": "sql-open-issues-026",
+      "category": "sql",
+      "task": "Give me the titles of the first ten open security issues",
+      "originalRequest": {
+        "query": "SELECT * FROM issues"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, title, number FROM issues WHERE status = 'open' AND label = 'security' LIMIT 10;"
+      },
+      "baselineBytes": 231921,
+      "cutdexBytes": 641,
+      "baselineApproximateToolResultTokens": 57981,
+      "cutdexApproximateToolResultTokens": 161,
+      "baselineApproximateToolContextTokens": 58023,
+      "cutdexApproximateToolContextTokens": 223,
+      "baselineApproximateRequestTokens": 42,
+      "cutdexApproximateRequestTokens": 62,
+      "optimizationLatencyMs": 0.019,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, status, title, number. PREDICATE: The task explicitly asks for status = 'open' and label = 'security'. LIMIT: The task asks for at most 10 records."
+    },
+    {
+      "id": "sql-error-logs-027",
+      "category": "sql",
+      "task": "Find the latest error logs for checkout",
+      "originalRequest": {
+        "query": "SELECT * FROM logs"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, error, created_at FROM logs ORDER BY created_at DESC;"
+      },
+      "baselineBytes": 406201,
+      "cutdexBytes": 29401,
+      "baselineApproximateToolResultTokens": 101551,
+      "cutdexApproximateToolResultTokens": 7351,
+      "baselineApproximateToolContextTokens": 101589,
+      "cutdexApproximateToolContextTokens": 7400,
+      "baselineApproximateRequestTokens": 38,
+      "cutdexApproximateRequestTokens": 49,
+      "optimizationLatencyMs": 0.011,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, error, created_at. SORT: The task asks for the newest records."
+    },
+    {
+      "id": "sql-total-failed-028",
+      "category": "sql-aggregate",
+      "task": "Count failed payments",
+      "originalRequest": {
+        "query": "SELECT COUNT(id) FROM payments"
+      },
+      "optimizedRequest": {
+        "query": "SELECT COUNT(id) FROM payments WHERE status = 'failed';"
+      },
+      "baselineBytes": 19,
+      "cutdexBytes": 19,
+      "baselineApproximateToolResultTokens": 5,
+      "cutdexApproximateToolResultTokens": 5,
+      "baselineApproximateToolContextTokens": 44,
+      "cutdexApproximateToolContextTokens": 50,
+      "baselineApproximateRequestTokens": 39,
+      "cutdexApproximateRequestTokens": 45,
+      "optimizationLatencyMs": 0.008,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PREDICATE: The task explicitly asks for status = 'failed'."
+    },
+    {
+      "id": "sql-join-029",
+      "category": "sql-unsupported",
+      "task": "Show recent orders with customer email",
+      "originalRequest": {
+        "query": "SELECT * FROM orders JOIN customers ON orders.customer_id = customers.id"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM orders JOIN customers ON orders.customer_id = customers.id"
+      },
+      "baselineBytes": 175501,
+      "cutdexBytes": 175501,
+      "baselineApproximateToolResultTokens": 43876,
+      "cutdexApproximateToolResultTokens": 43876,
+      "baselineApproximateToolContextTokens": 43930,
+      "cutdexApproximateToolContextTokens": 43930,
+      "baselineApproximateRequestTokens": 54,
+      "cutdexApproximateRequestTokens": 54,
+      "optimizationLatencyMs": 0.003,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The SQL parser could not establish a safe SELECT AST."
+    },
+    {
+      "id": "sql-ambiguous-030",
+      "category": "sql-ambiguous",
+      "task": "Summarize the relevant records",
+      "originalRequest": {
+        "query": "SELECT * FROM orders UNION SELECT * FROM archived_orders"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM orders UNION SELECT * FROM archived_orders"
+      },
+      "baselineBytes": 143701,
+      "cutdexBytes": 143701,
+      "baselineApproximateToolResultTokens": 35926,
+      "cutdexApproximateToolResultTokens": 35926,
+      "baselineApproximateToolContextTokens": 35973,
+      "cutdexApproximateToolContextTokens": 35973,
+      "baselineApproximateRequestTokens": 47,
+      "cutdexApproximateRequestTokens": 47,
+      "optimizationLatencyMs": 0.009,
+      "baselineTaskSuccess": false,
+      "cutdexTaskSuccess": false,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The SQL parser could not establish a safe SELECT AST."
+    },
+    {
+      "id": "sql-control-031",
+      "category": "control",
+      "task": "Return every field for the audit export",
+      "originalRequest": {
+        "query": "SELECT * FROM audit_events"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM audit_events"
+      },
+      "baselineBytes": 32561,
+      "cutdexBytes": 32561,
+      "baselineApproximateToolResultTokens": 8141,
+      "cutdexApproximateToolResultTokens": 8141,
+      "baselineApproximateToolContextTokens": 8182,
+      "cutdexApproximateToolContextTokens": 8182,
+      "baselineApproximateRequestTokens": 41,
+      "cutdexApproximateRequestTokens": 41,
+      "optimizationLatencyMs": 0.012,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The task explicitly asks for the complete record shape."
+    },
+    {
+      "id": "sql-write-032",
+      "category": "write",
+      "task": "Delete failed orders",
+      "originalRequest": {
+        "query": "DELETE FROM orders WHERE status = 'failed'"
+      },
+      "optimizedRequest": {
+        "query": "DELETE FROM orders WHERE status = 'failed'"
+      },
+      "baselineBytes": 33,
+      "cutdexBytes": 33,
+      "baselineApproximateToolResultTokens": 9,
+      "cutdexApproximateToolResultTokens": 9,
+      "baselineApproximateToolContextTokens": 49,
+      "cutdexApproximateToolContextTokens": 49,
+      "baselineApproximateRequestTokens": 40,
+      "cutdexApproximateRequestTokens": 40,
+      "optimizationLatencyMs": 0.001,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "Write and unknown tools pass through unchanged."
+    },
+    {
+      "id": "graphql-issues-033",
+      "category": "graphql",
+      "task": "Show issue title and state",
+      "originalRequest": {
+        "query": "query Issues { issues { number title state labels avatarUrl updatedAt } }"
+      },
+      "optimizedRequest": {
+        "query": "query Issues {\n  number\n  title\n  state\n}"
+      },
+      "baselineBytes": 12961,
+      "cutdexBytes": 12961,
+      "baselineApproximateToolResultTokens": 3241,
+      "cutdexApproximateToolResultTokens": 3241,
+      "baselineApproximateToolContextTokens": 3290,
+      "cutdexApproximateToolContextTokens": 3283,
+      "baselineApproximateRequestTokens": 49,
+      "cutdexApproximateRequestTokens": 42,
+      "optimizationLatencyMs": 0.013,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "GRAPHQL_PROJECTION: Kept fields named by the task: number, title, state."
+    },
+    {
+      "id": "graphql-repos-034",
+      "category": "graphql",
+      "task": "Show repository name and URL",
+      "originalRequest": {
+        "query": "query Repositories { repositories { name url description languages stars } }"
+      },
+      "optimizedRequest": {
+        "query": "query Repositories {\n  name\n  url\n}"
+      },
+      "baselineBytes": 7121,
+      "cutdexBytes": 7121,
+      "baselineApproximateToolResultTokens": 1781,
+      "cutdexApproximateToolResultTokens": 1781,
+      "baselineApproximateToolContextTokens": 1831,
+      "cutdexApproximateToolContextTokens": 1822,
+      "baselineApproximateRequestTokens": 50,
+      "cutdexApproximateRequestTokens": 41,
+      "optimizationLatencyMs": 0.005,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "GRAPHQL_PROJECTION: Kept fields named by the task: name, url."
+    },
+    {
+      "id": "api-users-035",
+      "category": "structured-api",
+      "task": "List the first five active users with email",
+      "originalRequest": {
+        "query": "SELECT * FROM users"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, email FROM users LIMIT 5;"
+      },
+      "baselineBytes": 141751,
+      "cutdexBytes": 151,
+      "baselineApproximateToolResultTokens": 35438,
+      "cutdexApproximateToolResultTokens": 38,
+      "baselineApproximateToolContextTokens": 35480,
+      "cutdexApproximateToolContextTokens": 84,
+      "baselineApproximateRequestTokens": 42,
+      "cutdexApproximateRequestTokens": 46,
+      "optimizationLatencyMs": 0.012,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, email. LIMIT: The task asks for at most 5 records."
+    },
+    {
+      "id": "already-optimal-036",
+      "category": "already-optimal",
+      "task": "Find the five most recent failed payments",
+      "originalRequest": {
+        "query": "SELECT id, status, total, created_at FROM payments WHERE status = 'failed' ORDER BY created_at DESC LIMIT 5"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, total, created_at FROM payments WHERE status = 'failed' ORDER BY created_at DESC LIMIT 5"
+      },
+      "baselineBytes": 346,
+      "cutdexBytes": 346,
+      "baselineApproximateToolResultTokens": 87,
+      "cutdexApproximateToolResultTokens": 87,
+      "baselineApproximateToolContextTokens": 150,
+      "cutdexApproximateToolContextTokens": 150,
+      "baselineApproximateRequestTokens": 63,
+      "cutdexApproximateRequestTokens": 63,
+      "optimizationLatencyMs": 0.027,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "No safe transformation found."
+    },
+    {
+      "id": "sql-failed-orders-037",
+      "category": "sql",
+      "task": "Find the five most recent failed enterprise orders",
+      "originalRequest": {
+        "query": "SELECT * FROM orders"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, created_at FROM orders WHERE status = 'failed' AND customer_tier = 'enterprise' ORDER BY created_at DESC LIMIT 5;"
+      },
+      "baselineBytes": 999001,
+      "cutdexBytes": 241,
+      "baselineApproximateToolResultTokens": 249751,
+      "cutdexApproximateToolResultTokens": 61,
+      "baselineApproximateToolContextTokens": 249792,
+      "cutdexApproximateToolContextTokens": 130,
+      "baselineApproximateRequestTokens": 41,
+      "cutdexApproximateRequestTokens": 69,
+      "optimizationLatencyMs": 0.015,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, status, created_at. PREDICATE: The task explicitly asks for status = 'failed' and customer_tier = 'enterprise'. SORT: The task asks for the newest records. LIMIT: The task asks for at most 5 records."
+    },
+    {
+      "id": "sql-open-issues-038",
+      "category": "sql",
+      "task": "Give me the titles of the first ten open security issues",
+      "originalRequest": {
+        "query": "SELECT * FROM issues"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, title, number FROM issues WHERE status = 'open' AND label = 'security' LIMIT 10;"
+      },
+      "baselineBytes": 231921,
+      "cutdexBytes": 641,
+      "baselineApproximateToolResultTokens": 57981,
+      "cutdexApproximateToolResultTokens": 161,
+      "baselineApproximateToolContextTokens": 58023,
+      "cutdexApproximateToolContextTokens": 223,
+      "baselineApproximateRequestTokens": 42,
+      "cutdexApproximateRequestTokens": 62,
+      "optimizationLatencyMs": 0.012,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, status, title, number. PREDICATE: The task explicitly asks for status = 'open' and label = 'security'. LIMIT: The task asks for at most 10 records."
+    },
+    {
+      "id": "sql-error-logs-039",
+      "category": "sql",
+      "task": "Find the latest error logs for checkout",
+      "originalRequest": {
+        "query": "SELECT * FROM logs"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, error, created_at FROM logs ORDER BY created_at DESC;"
+      },
+      "baselineBytes": 406201,
+      "cutdexBytes": 29401,
+      "baselineApproximateToolResultTokens": 101551,
+      "cutdexApproximateToolResultTokens": 7351,
+      "baselineApproximateToolContextTokens": 101589,
+      "cutdexApproximateToolContextTokens": 7400,
+      "baselineApproximateRequestTokens": 38,
+      "cutdexApproximateRequestTokens": 49,
+      "optimizationLatencyMs": 0.008,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, error, created_at. SORT: The task asks for the newest records."
+    },
+    {
+      "id": "sql-total-failed-040",
+      "category": "sql-aggregate",
+      "task": "Count failed payments",
+      "originalRequest": {
+        "query": "SELECT COUNT(id) FROM payments"
+      },
+      "optimizedRequest": {
+        "query": "SELECT COUNT(id) FROM payments WHERE status = 'failed';"
+      },
+      "baselineBytes": 19,
+      "cutdexBytes": 19,
+      "baselineApproximateToolResultTokens": 5,
+      "cutdexApproximateToolResultTokens": 5,
+      "baselineApproximateToolContextTokens": 44,
+      "cutdexApproximateToolContextTokens": 50,
+      "baselineApproximateRequestTokens": 39,
+      "cutdexApproximateRequestTokens": 45,
+      "optimizationLatencyMs": 0.007,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PREDICATE: The task explicitly asks for status = 'failed'."
+    },
+    {
+      "id": "sql-join-041",
+      "category": "sql-unsupported",
+      "task": "Show recent orders with customer email",
+      "originalRequest": {
+        "query": "SELECT * FROM orders JOIN customers ON orders.customer_id = customers.id"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM orders JOIN customers ON orders.customer_id = customers.id"
+      },
+      "baselineBytes": 175501,
+      "cutdexBytes": 175501,
+      "baselineApproximateToolResultTokens": 43876,
+      "cutdexApproximateToolResultTokens": 43876,
+      "baselineApproximateToolContextTokens": 43930,
+      "cutdexApproximateToolContextTokens": 43930,
+      "baselineApproximateRequestTokens": 54,
+      "cutdexApproximateRequestTokens": 54,
+      "optimizationLatencyMs": 0.004,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The SQL parser could not establish a safe SELECT AST."
+    },
+    {
+      "id": "sql-ambiguous-042",
+      "category": "sql-ambiguous",
+      "task": "Summarize the relevant records",
+      "originalRequest": {
+        "query": "SELECT * FROM orders UNION SELECT * FROM archived_orders"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM orders UNION SELECT * FROM archived_orders"
+      },
+      "baselineBytes": 143701,
+      "cutdexBytes": 143701,
+      "baselineApproximateToolResultTokens": 35926,
+      "cutdexApproximateToolResultTokens": 35926,
+      "baselineApproximateToolContextTokens": 35973,
+      "cutdexApproximateToolContextTokens": 35973,
+      "baselineApproximateRequestTokens": 47,
+      "cutdexApproximateRequestTokens": 47,
+      "optimizationLatencyMs": 0.004,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The SQL parser could not establish a safe SELECT AST."
+    },
+    {
+      "id": "sql-control-043",
+      "category": "control",
+      "task": "Return every field for the audit export",
+      "originalRequest": {
+        "query": "SELECT * FROM audit_events"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM audit_events"
+      },
+      "baselineBytes": 32561,
+      "cutdexBytes": 32561,
+      "baselineApproximateToolResultTokens": 8141,
+      "cutdexApproximateToolResultTokens": 8141,
+      "baselineApproximateToolContextTokens": 8182,
+      "cutdexApproximateToolContextTokens": 8182,
+      "baselineApproximateRequestTokens": 41,
+      "cutdexApproximateRequestTokens": 41,
+      "optimizationLatencyMs": 0.005,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The task explicitly asks for the complete record shape."
+    },
+    {
+      "id": "sql-write-044",
+      "category": "write",
+      "task": "Delete failed orders",
+      "originalRequest": {
+        "query": "DELETE FROM orders WHERE status = 'failed'"
+      },
+      "optimizedRequest": {
+        "query": "DELETE FROM orders WHERE status = 'failed'"
+      },
+      "baselineBytes": 33,
+      "cutdexBytes": 33,
+      "baselineApproximateToolResultTokens": 9,
+      "cutdexApproximateToolResultTokens": 9,
+      "baselineApproximateToolContextTokens": 49,
+      "cutdexApproximateToolContextTokens": 49,
+      "baselineApproximateRequestTokens": 40,
+      "cutdexApproximateRequestTokens": 40,
+      "optimizationLatencyMs": 0,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "Write and unknown tools pass through unchanged."
+    },
+    {
+      "id": "graphql-issues-045",
+      "category": "graphql",
+      "task": "Show issue title and state",
+      "originalRequest": {
+        "query": "query Issues { issues { number title state labels avatarUrl updatedAt } }"
+      },
+      "optimizedRequest": {
+        "query": "query Issues {\n  number\n  title\n  state\n}"
+      },
+      "baselineBytes": 12961,
+      "cutdexBytes": 12961,
+      "baselineApproximateToolResultTokens": 3241,
+      "cutdexApproximateToolResultTokens": 3241,
+      "baselineApproximateToolContextTokens": 3290,
+      "cutdexApproximateToolContextTokens": 3283,
+      "baselineApproximateRequestTokens": 49,
+      "cutdexApproximateRequestTokens": 42,
+      "optimizationLatencyMs": 0.01,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "GRAPHQL_PROJECTION: Kept fields named by the task: number, title, state."
+    },
+    {
+      "id": "graphql-repos-046",
+      "category": "graphql",
+      "task": "Show repository name and URL",
+      "originalRequest": {
+        "query": "query Repositories { repositories { name url description languages stars } }"
+      },
+      "optimizedRequest": {
+        "query": "query Repositories {\n  name\n  url\n}"
+      },
+      "baselineBytes": 7121,
+      "cutdexBytes": 7121,
+      "baselineApproximateToolResultTokens": 1781,
+      "cutdexApproximateToolResultTokens": 1781,
+      "baselineApproximateToolContextTokens": 1831,
+      "cutdexApproximateToolContextTokens": 1822,
+      "baselineApproximateRequestTokens": 50,
+      "cutdexApproximateRequestTokens": 41,
+      "optimizationLatencyMs": 0.004,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "GRAPHQL_PROJECTION: Kept fields named by the task: name, url."
+    },
+    {
+      "id": "api-users-047",
+      "category": "structured-api",
+      "task": "List the first five active users with email",
+      "originalRequest": {
+        "query": "SELECT * FROM users"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, email FROM users LIMIT 5;"
+      },
+      "baselineBytes": 141751,
+      "cutdexBytes": 151,
+      "baselineApproximateToolResultTokens": 35438,
+      "cutdexApproximateToolResultTokens": 38,
+      "baselineApproximateToolContextTokens": 35480,
+      "cutdexApproximateToolContextTokens": 84,
+      "baselineApproximateRequestTokens": 42,
+      "cutdexApproximateRequestTokens": 46,
+      "optimizationLatencyMs": 0.019,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, email. LIMIT: The task asks for at most 5 records."
+    },
+    {
+      "id": "already-optimal-048",
+      "category": "already-optimal",
+      "task": "Find the five most recent failed payments",
+      "originalRequest": {
+        "query": "SELECT id, status, total, created_at FROM payments WHERE status = 'failed' ORDER BY created_at DESC LIMIT 5"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, total, created_at FROM payments WHERE status = 'failed' ORDER BY created_at DESC LIMIT 5"
+      },
+      "baselineBytes": 346,
+      "cutdexBytes": 346,
+      "baselineApproximateToolResultTokens": 87,
+      "cutdexApproximateToolResultTokens": 87,
+      "baselineApproximateToolContextTokens": 150,
+      "cutdexApproximateToolContextTokens": 150,
+      "baselineApproximateRequestTokens": 63,
+      "cutdexApproximateRequestTokens": 63,
+      "optimizationLatencyMs": 0.012,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "No safe transformation found."
+    },
+    {
+      "id": "sql-failed-orders-049",
+      "category": "sql",
+      "task": "Find the five most recent failed enterprise orders",
+      "originalRequest": {
+        "query": "SELECT * FROM orders"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, created_at FROM orders WHERE status = 'failed' AND customer_tier = 'enterprise' ORDER BY created_at DESC LIMIT 5;"
+      },
+      "baselineBytes": 999001,
+      "cutdexBytes": 241,
+      "baselineApproximateToolResultTokens": 249751,
+      "cutdexApproximateToolResultTokens": 61,
+      "baselineApproximateToolContextTokens": 249792,
+      "cutdexApproximateToolContextTokens": 130,
+      "baselineApproximateRequestTokens": 41,
+      "cutdexApproximateRequestTokens": 69,
+      "optimizationLatencyMs": 0.011,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, status, created_at. PREDICATE: The task explicitly asks for status = 'failed' and customer_tier = 'enterprise'. SORT: The task asks for the newest records. LIMIT: The task asks for at most 5 records."
+    },
+    {
+      "id": "sql-open-issues-050",
+      "category": "sql",
+      "task": "Give me the titles of the first ten open security issues",
+      "originalRequest": {
+        "query": "SELECT * FROM issues"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, title, number FROM issues WHERE status = 'open' AND label = 'security' LIMIT 10;"
+      },
+      "baselineBytes": 231921,
+      "cutdexBytes": 641,
+      "baselineApproximateToolResultTokens": 57981,
+      "cutdexApproximateToolResultTokens": 161,
+      "baselineApproximateToolContextTokens": 58023,
+      "cutdexApproximateToolContextTokens": 223,
+      "baselineApproximateRequestTokens": 42,
+      "cutdexApproximateRequestTokens": 62,
+      "optimizationLatencyMs": 0.01,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, status, title, number. PREDICATE: The task explicitly asks for status = 'open' and label = 'security'. LIMIT: The task asks for at most 10 records."
+    },
+    {
+      "id": "sql-error-logs-051",
+      "category": "sql",
+      "task": "Find the latest error logs for checkout",
+      "originalRequest": {
+        "query": "SELECT * FROM logs"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, error, created_at FROM logs ORDER BY created_at DESC;"
+      },
+      "baselineBytes": 406201,
+      "cutdexBytes": 29401,
+      "baselineApproximateToolResultTokens": 101551,
+      "cutdexApproximateToolResultTokens": 7351,
+      "baselineApproximateToolContextTokens": 101589,
+      "cutdexApproximateToolContextTokens": 7400,
+      "baselineApproximateRequestTokens": 38,
+      "cutdexApproximateRequestTokens": 49,
+      "optimizationLatencyMs": 0.008,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, error, created_at. SORT: The task asks for the newest records."
+    },
+    {
+      "id": "sql-total-failed-052",
+      "category": "sql-aggregate",
+      "task": "Count failed payments",
+      "originalRequest": {
+        "query": "SELECT COUNT(id) FROM payments"
+      },
+      "optimizedRequest": {
+        "query": "SELECT COUNT(id) FROM payments WHERE status = 'failed';"
+      },
+      "baselineBytes": 19,
+      "cutdexBytes": 19,
+      "baselineApproximateToolResultTokens": 5,
+      "cutdexApproximateToolResultTokens": 5,
+      "baselineApproximateToolContextTokens": 44,
+      "cutdexApproximateToolContextTokens": 50,
+      "baselineApproximateRequestTokens": 39,
+      "cutdexApproximateRequestTokens": 45,
+      "optimizationLatencyMs": 0.006,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PREDICATE: The task explicitly asks for status = 'failed'."
+    },
+    {
+      "id": "sql-join-053",
+      "category": "sql-unsupported",
+      "task": "Show recent orders with customer email",
+      "originalRequest": {
+        "query": "SELECT * FROM orders JOIN customers ON orders.customer_id = customers.id"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM orders JOIN customers ON orders.customer_id = customers.id"
+      },
+      "baselineBytes": 175501,
+      "cutdexBytes": 175501,
+      "baselineApproximateToolResultTokens": 43876,
+      "cutdexApproximateToolResultTokens": 43876,
+      "baselineApproximateToolContextTokens": 43930,
+      "cutdexApproximateToolContextTokens": 43930,
+      "baselineApproximateRequestTokens": 54,
+      "cutdexApproximateRequestTokens": 54,
+      "optimizationLatencyMs": 0.004,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The SQL parser could not establish a safe SELECT AST."
+    },
+    {
+      "id": "sql-ambiguous-054",
+      "category": "sql-ambiguous",
+      "task": "Summarize the relevant records",
+      "originalRequest": {
+        "query": "SELECT * FROM orders UNION SELECT * FROM archived_orders"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM orders UNION SELECT * FROM archived_orders"
+      },
+      "baselineBytes": 143701,
+      "cutdexBytes": 143701,
+      "baselineApproximateToolResultTokens": 35926,
+      "cutdexApproximateToolResultTokens": 35926,
+      "baselineApproximateToolContextTokens": 35973,
+      "cutdexApproximateToolContextTokens": 35973,
+      "baselineApproximateRequestTokens": 47,
+      "cutdexApproximateRequestTokens": 47,
+      "optimizationLatencyMs": 0.002,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The SQL parser could not establish a safe SELECT AST."
+    },
+    {
+      "id": "sql-control-055",
+      "category": "control",
+      "task": "Return every field for the audit export",
+      "originalRequest": {
+        "query": "SELECT * FROM audit_events"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM audit_events"
+      },
+      "baselineBytes": 32561,
+      "cutdexBytes": 32561,
+      "baselineApproximateToolResultTokens": 8141,
+      "cutdexApproximateToolResultTokens": 8141,
+      "baselineApproximateToolContextTokens": 8182,
+      "cutdexApproximateToolContextTokens": 8182,
+      "baselineApproximateRequestTokens": 41,
+      "cutdexApproximateRequestTokens": 41,
+      "optimizationLatencyMs": 0.004,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The task explicitly asks for the complete record shape."
+    },
+    {
+      "id": "sql-write-056",
+      "category": "write",
+      "task": "Delete failed orders",
+      "originalRequest": {
+        "query": "DELETE FROM orders WHERE status = 'failed'"
+      },
+      "optimizedRequest": {
+        "query": "DELETE FROM orders WHERE status = 'failed'"
+      },
+      "baselineBytes": 33,
+      "cutdexBytes": 33,
+      "baselineApproximateToolResultTokens": 9,
+      "cutdexApproximateToolResultTokens": 9,
+      "baselineApproximateToolContextTokens": 49,
+      "cutdexApproximateToolContextTokens": 49,
+      "baselineApproximateRequestTokens": 40,
+      "cutdexApproximateRequestTokens": 40,
+      "optimizationLatencyMs": 0,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "Write and unknown tools pass through unchanged."
+    },
+    {
+      "id": "graphql-issues-057",
+      "category": "graphql",
+      "task": "Show issue title and state",
+      "originalRequest": {
+        "query": "query Issues { issues { number title state labels avatarUrl updatedAt } }"
+      },
+      "optimizedRequest": {
+        "query": "query Issues {\n  number\n  title\n  state\n}"
+      },
+      "baselineBytes": 12961,
+      "cutdexBytes": 12961,
+      "baselineApproximateToolResultTokens": 3241,
+      "cutdexApproximateToolResultTokens": 3241,
+      "baselineApproximateToolContextTokens": 3290,
+      "cutdexApproximateToolContextTokens": 3283,
+      "baselineApproximateRequestTokens": 49,
+      "cutdexApproximateRequestTokens": 42,
+      "optimizationLatencyMs": 0.01,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "GRAPHQL_PROJECTION: Kept fields named by the task: number, title, state."
+    },
+    {
+      "id": "graphql-repos-058",
+      "category": "graphql",
+      "task": "Show repository name and URL",
+      "originalRequest": {
+        "query": "query Repositories { repositories { name url description languages stars } }"
+      },
+      "optimizedRequest": {
+        "query": "query Repositories {\n  name\n  url\n}"
+      },
+      "baselineBytes": 7121,
+      "cutdexBytes": 7121,
+      "baselineApproximateToolResultTokens": 1781,
+      "cutdexApproximateToolResultTokens": 1781,
+      "baselineApproximateToolContextTokens": 1831,
+      "cutdexApproximateToolContextTokens": 1822,
+      "baselineApproximateRequestTokens": 50,
+      "cutdexApproximateRequestTokens": 41,
+      "optimizationLatencyMs": 0.009,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "GRAPHQL_PROJECTION: Kept fields named by the task: name, url."
+    },
+    {
+      "id": "api-users-059",
+      "category": "structured-api",
+      "task": "List the first five active users with email",
+      "originalRequest": {
+        "query": "SELECT * FROM users"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, email FROM users LIMIT 5;"
+      },
+      "baselineBytes": 141751,
+      "cutdexBytes": 151,
+      "baselineApproximateToolResultTokens": 35438,
+      "cutdexApproximateToolResultTokens": 38,
+      "baselineApproximateToolContextTokens": 35480,
+      "cutdexApproximateToolContextTokens": 84,
+      "baselineApproximateRequestTokens": 42,
+      "cutdexApproximateRequestTokens": 46,
+      "optimizationLatencyMs": 0.009,
+      "baselineTaskSuccess": false,
+      "cutdexTaskSuccess": false,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, email. LIMIT: The task asks for at most 5 records."
+    },
+    {
+      "id": "already-optimal-060",
+      "category": "already-optimal",
+      "task": "Find the five most recent failed payments",
+      "originalRequest": {
+        "query": "SELECT id, status, total, created_at FROM payments WHERE status = 'failed' ORDER BY created_at DESC LIMIT 5"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, total, created_at FROM payments WHERE status = 'failed' ORDER BY created_at DESC LIMIT 5"
+      },
+      "baselineBytes": 346,
+      "cutdexBytes": 346,
+      "baselineApproximateToolResultTokens": 87,
+      "cutdexApproximateToolResultTokens": 87,
+      "baselineApproximateToolContextTokens": 150,
+      "cutdexApproximateToolContextTokens": 150,
+      "baselineApproximateRequestTokens": 63,
+      "cutdexApproximateRequestTokens": 63,
+      "optimizationLatencyMs": 0.01,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "No safe transformation found."
+    },
+    {
+      "id": "sql-failed-orders-061",
+      "category": "sql",
+      "task": "Find the five most recent failed enterprise orders",
+      "originalRequest": {
+        "query": "SELECT * FROM orders"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, created_at FROM orders WHERE status = 'failed' AND customer_tier = 'enterprise' ORDER BY created_at DESC LIMIT 5;"
+      },
+      "baselineBytes": 999001,
+      "cutdexBytes": 241,
+      "baselineApproximateToolResultTokens": 249751,
+      "cutdexApproximateToolResultTokens": 61,
+      "baselineApproximateToolContextTokens": 249792,
+      "cutdexApproximateToolContextTokens": 130,
+      "baselineApproximateRequestTokens": 41,
+      "cutdexApproximateRequestTokens": 69,
+      "optimizationLatencyMs": 0.01,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, status, created_at. PREDICATE: The task explicitly asks for status = 'failed' and customer_tier = 'enterprise'. SORT: The task asks for the newest records. LIMIT: The task asks for at most 5 records."
+    },
+    {
+      "id": "sql-open-issues-062",
+      "category": "sql",
+      "task": "Give me the titles of the first ten open security issues",
+      "originalRequest": {
+        "query": "SELECT * FROM issues"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, title, number FROM issues WHERE status = 'open' AND label = 'security' LIMIT 10;"
+      },
+      "baselineBytes": 231921,
+      "cutdexBytes": 641,
+      "baselineApproximateToolResultTokens": 57981,
+      "cutdexApproximateToolResultTokens": 161,
+      "baselineApproximateToolContextTokens": 58023,
+      "cutdexApproximateToolContextTokens": 223,
+      "baselineApproximateRequestTokens": 42,
+      "cutdexApproximateRequestTokens": 62,
+      "optimizationLatencyMs": 0.009,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, status, title, number. PREDICATE: The task explicitly asks for status = 'open' and label = 'security'. LIMIT: The task asks for at most 10 records."
+    },
+    {
+      "id": "sql-error-logs-063",
+      "category": "sql",
+      "task": "Find the latest error logs for checkout",
+      "originalRequest": {
+        "query": "SELECT * FROM logs"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, error, created_at FROM logs ORDER BY created_at DESC;"
+      },
+      "baselineBytes": 406201,
+      "cutdexBytes": 29401,
+      "baselineApproximateToolResultTokens": 101551,
+      "cutdexApproximateToolResultTokens": 7351,
+      "baselineApproximateToolContextTokens": 101589,
+      "cutdexApproximateToolContextTokens": 7400,
+      "baselineApproximateRequestTokens": 38,
+      "cutdexApproximateRequestTokens": 49,
+      "optimizationLatencyMs": 0.008,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, error, created_at. SORT: The task asks for the newest records."
+    },
+    {
+      "id": "sql-total-failed-064",
+      "category": "sql-aggregate",
+      "task": "Count failed payments",
+      "originalRequest": {
+        "query": "SELECT COUNT(id) FROM payments"
+      },
+      "optimizedRequest": {
+        "query": "SELECT COUNT(id) FROM payments WHERE status = 'failed';"
+      },
+      "baselineBytes": 19,
+      "cutdexBytes": 19,
+      "baselineApproximateToolResultTokens": 5,
+      "cutdexApproximateToolResultTokens": 5,
+      "baselineApproximateToolContextTokens": 44,
+      "cutdexApproximateToolContextTokens": 50,
+      "baselineApproximateRequestTokens": 39,
+      "cutdexApproximateRequestTokens": 45,
+      "optimizationLatencyMs": 0.006,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PREDICATE: The task explicitly asks for status = 'failed'."
+    },
+    {
+      "id": "sql-join-065",
+      "category": "sql-unsupported",
+      "task": "Show recent orders with customer email",
+      "originalRequest": {
+        "query": "SELECT * FROM orders JOIN customers ON orders.customer_id = customers.id"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM orders JOIN customers ON orders.customer_id = customers.id"
+      },
+      "baselineBytes": 175501,
+      "cutdexBytes": 175501,
+      "baselineApproximateToolResultTokens": 43876,
+      "cutdexApproximateToolResultTokens": 43876,
+      "baselineApproximateToolContextTokens": 43930,
+      "cutdexApproximateToolContextTokens": 43930,
+      "baselineApproximateRequestTokens": 54,
+      "cutdexApproximateRequestTokens": 54,
+      "optimizationLatencyMs": 0.004,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The SQL parser could not establish a safe SELECT AST."
+    },
+    {
+      "id": "sql-ambiguous-066",
+      "category": "sql-ambiguous",
+      "task": "Summarize the relevant records",
+      "originalRequest": {
+        "query": "SELECT * FROM orders UNION SELECT * FROM archived_orders"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM orders UNION SELECT * FROM archived_orders"
+      },
+      "baselineBytes": 143701,
+      "cutdexBytes": 143701,
+      "baselineApproximateToolResultTokens": 35926,
+      "cutdexApproximateToolResultTokens": 35926,
+      "baselineApproximateToolContextTokens": 35973,
+      "cutdexApproximateToolContextTokens": 35973,
+      "baselineApproximateRequestTokens": 47,
+      "cutdexApproximateRequestTokens": 47,
+      "optimizationLatencyMs": 0.002,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The SQL parser could not establish a safe SELECT AST."
+    },
+    {
+      "id": "sql-control-067",
+      "category": "control",
+      "task": "Return every field for the audit export",
+      "originalRequest": {
+        "query": "SELECT * FROM audit_events"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM audit_events"
+      },
+      "baselineBytes": 32561,
+      "cutdexBytes": 32561,
+      "baselineApproximateToolResultTokens": 8141,
+      "cutdexApproximateToolResultTokens": 8141,
+      "baselineApproximateToolContextTokens": 8182,
+      "cutdexApproximateToolContextTokens": 8182,
+      "baselineApproximateRequestTokens": 41,
+      "cutdexApproximateRequestTokens": 41,
+      "optimizationLatencyMs": 0.004,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The task explicitly asks for the complete record shape."
+    },
+    {
+      "id": "sql-write-068",
+      "category": "write",
+      "task": "Delete failed orders",
+      "originalRequest": {
+        "query": "DELETE FROM orders WHERE status = 'failed'"
+      },
+      "optimizedRequest": {
+        "query": "DELETE FROM orders WHERE status = 'failed'"
+      },
+      "baselineBytes": 33,
+      "cutdexBytes": 33,
+      "baselineApproximateToolResultTokens": 9,
+      "cutdexApproximateToolResultTokens": 9,
+      "baselineApproximateToolContextTokens": 49,
+      "cutdexApproximateToolContextTokens": 49,
+      "baselineApproximateRequestTokens": 40,
+      "cutdexApproximateRequestTokens": 40,
+      "optimizationLatencyMs": 0,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "Write and unknown tools pass through unchanged."
+    },
+    {
+      "id": "graphql-issues-069",
+      "category": "graphql",
+      "task": "Show issue title and state",
+      "originalRequest": {
+        "query": "query Issues { issues { number title state labels avatarUrl updatedAt } }"
+      },
+      "optimizedRequest": {
+        "query": "query Issues {\n  number\n  title\n  state\n}"
+      },
+      "baselineBytes": 12961,
+      "cutdexBytes": 12961,
+      "baselineApproximateToolResultTokens": 3241,
+      "cutdexApproximateToolResultTokens": 3241,
+      "baselineApproximateToolContextTokens": 3290,
+      "cutdexApproximateToolContextTokens": 3283,
+      "baselineApproximateRequestTokens": 49,
+      "cutdexApproximateRequestTokens": 42,
+      "optimizationLatencyMs": 0.008,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "GRAPHQL_PROJECTION: Kept fields named by the task: number, title, state."
+    },
+    {
+      "id": "graphql-repos-070",
+      "category": "graphql",
+      "task": "Show repository name and URL",
+      "originalRequest": {
+        "query": "query Repositories { repositories { name url description languages stars } }"
+      },
+      "optimizedRequest": {
+        "query": "query Repositories {\n  name\n  url\n}"
+      },
+      "baselineBytes": 7121,
+      "cutdexBytes": 7121,
+      "baselineApproximateToolResultTokens": 1781,
+      "cutdexApproximateToolResultTokens": 1781,
+      "baselineApproximateToolContextTokens": 1831,
+      "cutdexApproximateToolContextTokens": 1822,
+      "baselineApproximateRequestTokens": 50,
+      "cutdexApproximateRequestTokens": 41,
+      "optimizationLatencyMs": 0.004,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "GRAPHQL_PROJECTION: Kept fields named by the task: name, url."
+    },
+    {
+      "id": "api-users-071",
+      "category": "structured-api",
+      "task": "List the first five active users with email",
+      "originalRequest": {
+        "query": "SELECT * FROM users"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, email FROM users LIMIT 5;"
+      },
+      "baselineBytes": 141751,
+      "cutdexBytes": 151,
+      "baselineApproximateToolResultTokens": 35438,
+      "cutdexApproximateToolResultTokens": 38,
+      "baselineApproximateToolContextTokens": 35480,
+      "cutdexApproximateToolContextTokens": 84,
+      "baselineApproximateRequestTokens": 42,
+      "cutdexApproximateRequestTokens": 46,
+      "optimizationLatencyMs": 0.008,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, email. LIMIT: The task asks for at most 5 records."
+    },
+    {
+      "id": "already-optimal-072",
+      "category": "already-optimal",
+      "task": "Find the five most recent failed payments",
+      "originalRequest": {
+        "query": "SELECT id, status, total, created_at FROM payments WHERE status = 'failed' ORDER BY created_at DESC LIMIT 5"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, total, created_at FROM payments WHERE status = 'failed' ORDER BY created_at DESC LIMIT 5"
+      },
+      "baselineBytes": 346,
+      "cutdexBytes": 346,
+      "baselineApproximateToolResultTokens": 87,
+      "cutdexApproximateToolResultTokens": 87,
+      "baselineApproximateToolContextTokens": 150,
+      "cutdexApproximateToolContextTokens": 150,
+      "baselineApproximateRequestTokens": 63,
+      "cutdexApproximateRequestTokens": 63,
+      "optimizationLatencyMs": 0.01,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "No safe transformation found."
+    },
+    {
+      "id": "sql-failed-orders-073",
+      "category": "sql",
+      "task": "Find the five most recent failed enterprise orders",
+      "originalRequest": {
+        "query": "SELECT * FROM orders"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, created_at FROM orders WHERE status = 'failed' AND customer_tier = 'enterprise' ORDER BY created_at DESC LIMIT 5;"
+      },
+      "baselineBytes": 999001,
+      "cutdexBytes": 241,
+      "baselineApproximateToolResultTokens": 249751,
+      "cutdexApproximateToolResultTokens": 61,
+      "baselineApproximateToolContextTokens": 249792,
+      "cutdexApproximateToolContextTokens": 130,
+      "baselineApproximateRequestTokens": 41,
+      "cutdexApproximateRequestTokens": 69,
+      "optimizationLatencyMs": 0.01,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, status, created_at. PREDICATE: The task explicitly asks for status = 'failed' and customer_tier = 'enterprise'. SORT: The task asks for the newest records. LIMIT: The task asks for at most 5 records."
+    },
+    {
+      "id": "sql-open-issues-074",
+      "category": "sql",
+      "task": "Give me the titles of the first ten open security issues",
+      "originalRequest": {
+        "query": "SELECT * FROM issues"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, title, number FROM issues WHERE status = 'open' AND label = 'security' LIMIT 10;"
+      },
+      "baselineBytes": 231921,
+      "cutdexBytes": 641,
+      "baselineApproximateToolResultTokens": 57981,
+      "cutdexApproximateToolResultTokens": 161,
+      "baselineApproximateToolContextTokens": 58023,
+      "cutdexApproximateToolContextTokens": 223,
+      "baselineApproximateRequestTokens": 42,
+      "cutdexApproximateRequestTokens": 62,
+      "optimizationLatencyMs": 0.009,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, status, title, number. PREDICATE: The task explicitly asks for status = 'open' and label = 'security'. LIMIT: The task asks for at most 10 records."
+    },
+    {
+      "id": "sql-error-logs-075",
+      "category": "sql",
+      "task": "Find the latest error logs for checkout",
+      "originalRequest": {
+        "query": "SELECT * FROM logs"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, error, created_at FROM logs ORDER BY created_at DESC;"
+      },
+      "baselineBytes": 406201,
+      "cutdexBytes": 29401,
+      "baselineApproximateToolResultTokens": 101551,
+      "cutdexApproximateToolResultTokens": 7351,
+      "baselineApproximateToolContextTokens": 101589,
+      "cutdexApproximateToolContextTokens": 7400,
+      "baselineApproximateRequestTokens": 38,
+      "cutdexApproximateRequestTokens": 49,
+      "optimizationLatencyMs": 0.01,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, error, created_at. SORT: The task asks for the newest records."
+    },
+    {
+      "id": "sql-total-failed-076",
+      "category": "sql-aggregate",
+      "task": "Count failed payments",
+      "originalRequest": {
+        "query": "SELECT COUNT(id) FROM payments"
+      },
+      "optimizedRequest": {
+        "query": "SELECT COUNT(id) FROM payments WHERE status = 'failed';"
+      },
+      "baselineBytes": 19,
+      "cutdexBytes": 19,
+      "baselineApproximateToolResultTokens": 5,
+      "cutdexApproximateToolResultTokens": 5,
+      "baselineApproximateToolContextTokens": 44,
+      "cutdexApproximateToolContextTokens": 50,
+      "baselineApproximateRequestTokens": 39,
+      "cutdexApproximateRequestTokens": 45,
+      "optimizationLatencyMs": 0.007,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PREDICATE: The task explicitly asks for status = 'failed'."
+    },
+    {
+      "id": "sql-join-077",
+      "category": "sql-unsupported",
+      "task": "Show recent orders with customer email",
+      "originalRequest": {
+        "query": "SELECT * FROM orders JOIN customers ON orders.customer_id = customers.id"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM orders JOIN customers ON orders.customer_id = customers.id"
+      },
+      "baselineBytes": 175501,
+      "cutdexBytes": 175501,
+      "baselineApproximateToolResultTokens": 43876,
+      "cutdexApproximateToolResultTokens": 43876,
+      "baselineApproximateToolContextTokens": 43930,
+      "cutdexApproximateToolContextTokens": 43930,
+      "baselineApproximateRequestTokens": 54,
+      "cutdexApproximateRequestTokens": 54,
+      "optimizationLatencyMs": 0.003,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The SQL parser could not establish a safe SELECT AST."
+    },
+    {
+      "id": "sql-ambiguous-078",
+      "category": "sql-ambiguous",
+      "task": "Summarize the relevant records",
+      "originalRequest": {
+        "query": "SELECT * FROM orders UNION SELECT * FROM archived_orders"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM orders UNION SELECT * FROM archived_orders"
+      },
+      "baselineBytes": 143701,
+      "cutdexBytes": 143701,
+      "baselineApproximateToolResultTokens": 35926,
+      "cutdexApproximateToolResultTokens": 35926,
+      "baselineApproximateToolContextTokens": 35973,
+      "cutdexApproximateToolContextTokens": 35973,
+      "baselineApproximateRequestTokens": 47,
+      "cutdexApproximateRequestTokens": 47,
+      "optimizationLatencyMs": 0.002,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The SQL parser could not establish a safe SELECT AST."
+    },
+    {
+      "id": "sql-control-079",
+      "category": "control",
+      "task": "Return every field for the audit export",
+      "originalRequest": {
+        "query": "SELECT * FROM audit_events"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM audit_events"
+      },
+      "baselineBytes": 32561,
+      "cutdexBytes": 32561,
+      "baselineApproximateToolResultTokens": 8141,
+      "cutdexApproximateToolResultTokens": 8141,
+      "baselineApproximateToolContextTokens": 8182,
+      "cutdexApproximateToolContextTokens": 8182,
+      "baselineApproximateRequestTokens": 41,
+      "cutdexApproximateRequestTokens": 41,
+      "optimizationLatencyMs": 0.011,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The task explicitly asks for the complete record shape."
+    },
+    {
+      "id": "sql-write-080",
+      "category": "write",
+      "task": "Delete failed orders",
+      "originalRequest": {
+        "query": "DELETE FROM orders WHERE status = 'failed'"
+      },
+      "optimizedRequest": {
+        "query": "DELETE FROM orders WHERE status = 'failed'"
+      },
+      "baselineBytes": 33,
+      "cutdexBytes": 33,
+      "baselineApproximateToolResultTokens": 9,
+      "cutdexApproximateToolResultTokens": 9,
+      "baselineApproximateToolContextTokens": 49,
+      "cutdexApproximateToolContextTokens": 49,
+      "baselineApproximateRequestTokens": 40,
+      "cutdexApproximateRequestTokens": 40,
+      "optimizationLatencyMs": 0,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "Write and unknown tools pass through unchanged."
+    },
+    {
+      "id": "graphql-issues-081",
+      "category": "graphql",
+      "task": "Show issue title and state",
+      "originalRequest": {
+        "query": "query Issues { issues { number title state labels avatarUrl updatedAt } }"
+      },
+      "optimizedRequest": {
+        "query": "query Issues {\n  number\n  title\n  state\n}"
+      },
+      "baselineBytes": 12961,
+      "cutdexBytes": 12961,
+      "baselineApproximateToolResultTokens": 3241,
+      "cutdexApproximateToolResultTokens": 3241,
+      "baselineApproximateToolContextTokens": 3290,
+      "cutdexApproximateToolContextTokens": 3283,
+      "baselineApproximateRequestTokens": 49,
+      "cutdexApproximateRequestTokens": 42,
+      "optimizationLatencyMs": 0.006,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "GRAPHQL_PROJECTION: Kept fields named by the task: number, title, state."
+    },
+    {
+      "id": "graphql-repos-082",
+      "category": "graphql",
+      "task": "Show repository name and URL",
+      "originalRequest": {
+        "query": "query Repositories { repositories { name url description languages stars } }"
+      },
+      "optimizedRequest": {
+        "query": "query Repositories {\n  name\n  url\n}"
+      },
+      "baselineBytes": 7121,
+      "cutdexBytes": 7121,
+      "baselineApproximateToolResultTokens": 1781,
+      "cutdexApproximateToolResultTokens": 1781,
+      "baselineApproximateToolContextTokens": 1831,
+      "cutdexApproximateToolContextTokens": 1822,
+      "baselineApproximateRequestTokens": 50,
+      "cutdexApproximateRequestTokens": 41,
+      "optimizationLatencyMs": 0.004,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "GRAPHQL_PROJECTION: Kept fields named by the task: name, url."
+    },
+    {
+      "id": "api-users-083",
+      "category": "structured-api",
+      "task": "List the first five active users with email",
+      "originalRequest": {
+        "query": "SELECT * FROM users"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, email FROM users LIMIT 5;"
+      },
+      "baselineBytes": 141751,
+      "cutdexBytes": 151,
+      "baselineApproximateToolResultTokens": 35438,
+      "cutdexApproximateToolResultTokens": 38,
+      "baselineApproximateToolContextTokens": 35480,
+      "cutdexApproximateToolContextTokens": 84,
+      "baselineApproximateRequestTokens": 42,
+      "cutdexApproximateRequestTokens": 46,
+      "optimizationLatencyMs": 0.007,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, email. LIMIT: The task asks for at most 5 records."
+    },
+    {
+      "id": "already-optimal-084",
+      "category": "already-optimal",
+      "task": "Find the five most recent failed payments",
+      "originalRequest": {
+        "query": "SELECT id, status, total, created_at FROM payments WHERE status = 'failed' ORDER BY created_at DESC LIMIT 5"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, total, created_at FROM payments WHERE status = 'failed' ORDER BY created_at DESC LIMIT 5"
+      },
+      "baselineBytes": 346,
+      "cutdexBytes": 346,
+      "baselineApproximateToolResultTokens": 87,
+      "cutdexApproximateToolResultTokens": 87,
+      "baselineApproximateToolContextTokens": 150,
+      "cutdexApproximateToolContextTokens": 150,
+      "baselineApproximateRequestTokens": 63,
+      "cutdexApproximateRequestTokens": 63,
+      "optimizationLatencyMs": 0.014,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "No safe transformation found."
+    },
+    {
+      "id": "sql-failed-orders-085",
+      "category": "sql",
+      "task": "Find the five most recent failed enterprise orders",
+      "originalRequest": {
+        "query": "SELECT * FROM orders"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, created_at FROM orders WHERE status = 'failed' AND customer_tier = 'enterprise' ORDER BY created_at DESC LIMIT 5;"
+      },
+      "baselineBytes": 999001,
+      "cutdexBytes": 241,
+      "baselineApproximateToolResultTokens": 249751,
+      "cutdexApproximateToolResultTokens": 61,
+      "baselineApproximateToolContextTokens": 249792,
+      "cutdexApproximateToolContextTokens": 130,
+      "baselineApproximateRequestTokens": 41,
+      "cutdexApproximateRequestTokens": 69,
+      "optimizationLatencyMs": 0.01,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, status, created_at. PREDICATE: The task explicitly asks for status = 'failed' and customer_tier = 'enterprise'. SORT: The task asks for the newest records. LIMIT: The task asks for at most 5 records."
+    },
+    {
+      "id": "sql-open-issues-086",
+      "category": "sql",
+      "task": "Give me the titles of the first ten open security issues",
+      "originalRequest": {
+        "query": "SELECT * FROM issues"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, title, number FROM issues WHERE status = 'open' AND label = 'security' LIMIT 10;"
+      },
+      "baselineBytes": 231921,
+      "cutdexBytes": 641,
+      "baselineApproximateToolResultTokens": 57981,
+      "cutdexApproximateToolResultTokens": 161,
+      "baselineApproximateToolContextTokens": 58023,
+      "cutdexApproximateToolContextTokens": 223,
+      "baselineApproximateRequestTokens": 42,
+      "cutdexApproximateRequestTokens": 62,
+      "optimizationLatencyMs": 0.009,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, status, title, number. PREDICATE: The task explicitly asks for status = 'open' and label = 'security'. LIMIT: The task asks for at most 10 records."
+    },
+    {
+      "id": "sql-error-logs-087",
+      "category": "sql",
+      "task": "Find the latest error logs for checkout",
+      "originalRequest": {
+        "query": "SELECT * FROM logs"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, error, created_at FROM logs ORDER BY created_at DESC;"
+      },
+      "baselineBytes": 406201,
+      "cutdexBytes": 29401,
+      "baselineApproximateToolResultTokens": 101551,
+      "cutdexApproximateToolResultTokens": 7351,
+      "baselineApproximateToolContextTokens": 101589,
+      "cutdexApproximateToolContextTokens": 7400,
+      "baselineApproximateRequestTokens": 38,
+      "cutdexApproximateRequestTokens": 49,
+      "optimizationLatencyMs": 0.01,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, error, created_at. SORT: The task asks for the newest records."
+    },
+    {
+      "id": "sql-total-failed-088",
+      "category": "sql-aggregate",
+      "task": "Count failed payments",
+      "originalRequest": {
+        "query": "SELECT COUNT(id) FROM payments"
+      },
+      "optimizedRequest": {
+        "query": "SELECT COUNT(id) FROM payments WHERE status = 'failed';"
+      },
+      "baselineBytes": 19,
+      "cutdexBytes": 19,
+      "baselineApproximateToolResultTokens": 5,
+      "cutdexApproximateToolResultTokens": 5,
+      "baselineApproximateToolContextTokens": 44,
+      "cutdexApproximateToolContextTokens": 50,
+      "baselineApproximateRequestTokens": 39,
+      "cutdexApproximateRequestTokens": 45,
+      "optimizationLatencyMs": 0.006,
+      "baselineTaskSuccess": false,
+      "cutdexTaskSuccess": false,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PREDICATE: The task explicitly asks for status = 'failed'."
+    },
+    {
+      "id": "sql-join-089",
+      "category": "sql-unsupported",
+      "task": "Show recent orders with customer email",
+      "originalRequest": {
+        "query": "SELECT * FROM orders JOIN customers ON orders.customer_id = customers.id"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM orders JOIN customers ON orders.customer_id = customers.id"
+      },
+      "baselineBytes": 175501,
+      "cutdexBytes": 175501,
+      "baselineApproximateToolResultTokens": 43876,
+      "cutdexApproximateToolResultTokens": 43876,
+      "baselineApproximateToolContextTokens": 43930,
+      "cutdexApproximateToolContextTokens": 43930,
+      "baselineApproximateRequestTokens": 54,
+      "cutdexApproximateRequestTokens": 54,
+      "optimizationLatencyMs": 0.003,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The SQL parser could not establish a safe SELECT AST."
+    },
+    {
+      "id": "sql-ambiguous-090",
+      "category": "sql-ambiguous",
+      "task": "Summarize the relevant records",
+      "originalRequest": {
+        "query": "SELECT * FROM orders UNION SELECT * FROM archived_orders"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM orders UNION SELECT * FROM archived_orders"
+      },
+      "baselineBytes": 143701,
+      "cutdexBytes": 143701,
+      "baselineApproximateToolResultTokens": 35926,
+      "cutdexApproximateToolResultTokens": 35926,
+      "baselineApproximateToolContextTokens": 35973,
+      "cutdexApproximateToolContextTokens": 35973,
+      "baselineApproximateRequestTokens": 47,
+      "cutdexApproximateRequestTokens": 47,
+      "optimizationLatencyMs": 0.002,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The SQL parser could not establish a safe SELECT AST."
+    },
+    {
+      "id": "sql-control-091",
+      "category": "control",
+      "task": "Return every field for the audit export",
+      "originalRequest": {
+        "query": "SELECT * FROM audit_events"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM audit_events"
+      },
+      "baselineBytes": 32561,
+      "cutdexBytes": 32561,
+      "baselineApproximateToolResultTokens": 8141,
+      "cutdexApproximateToolResultTokens": 8141,
+      "baselineApproximateToolContextTokens": 8182,
+      "cutdexApproximateToolContextTokens": 8182,
+      "baselineApproximateRequestTokens": 41,
+      "cutdexApproximateRequestTokens": 41,
+      "optimizationLatencyMs": 0.003,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The task explicitly asks for the complete record shape."
+    },
+    {
+      "id": "sql-write-092",
+      "category": "write",
+      "task": "Delete failed orders",
+      "originalRequest": {
+        "query": "DELETE FROM orders WHERE status = 'failed'"
+      },
+      "optimizedRequest": {
+        "query": "DELETE FROM orders WHERE status = 'failed'"
+      },
+      "baselineBytes": 33,
+      "cutdexBytes": 33,
+      "baselineApproximateToolResultTokens": 9,
+      "cutdexApproximateToolResultTokens": 9,
+      "baselineApproximateToolContextTokens": 49,
+      "cutdexApproximateToolContextTokens": 49,
+      "baselineApproximateRequestTokens": 40,
+      "cutdexApproximateRequestTokens": 40,
+      "optimizationLatencyMs": 0,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "Write and unknown tools pass through unchanged."
+    },
+    {
+      "id": "graphql-issues-093",
+      "category": "graphql",
+      "task": "Show issue title and state",
+      "originalRequest": {
+        "query": "query Issues { issues { number title state labels avatarUrl updatedAt } }"
+      },
+      "optimizedRequest": {
+        "query": "query Issues {\n  number\n  title\n  state\n}"
+      },
+      "baselineBytes": 12961,
+      "cutdexBytes": 12961,
+      "baselineApproximateToolResultTokens": 3241,
+      "cutdexApproximateToolResultTokens": 3241,
+      "baselineApproximateToolContextTokens": 3290,
+      "cutdexApproximateToolContextTokens": 3283,
+      "baselineApproximateRequestTokens": 49,
+      "cutdexApproximateRequestTokens": 42,
+      "optimizationLatencyMs": 0.006,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "GRAPHQL_PROJECTION: Kept fields named by the task: number, title, state."
+    },
+    {
+      "id": "graphql-repos-094",
+      "category": "graphql",
+      "task": "Show repository name and URL",
+      "originalRequest": {
+        "query": "query Repositories { repositories { name url description languages stars } }"
+      },
+      "optimizedRequest": {
+        "query": "query Repositories {\n  name\n  url\n}"
+      },
+      "baselineBytes": 7121,
+      "cutdexBytes": 7121,
+      "baselineApproximateToolResultTokens": 1781,
+      "cutdexApproximateToolResultTokens": 1781,
+      "baselineApproximateToolContextTokens": 1831,
+      "cutdexApproximateToolContextTokens": 1822,
+      "baselineApproximateRequestTokens": 50,
+      "cutdexApproximateRequestTokens": 41,
+      "optimizationLatencyMs": 0.004,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "GRAPHQL_PROJECTION: Kept fields named by the task: name, url."
+    },
+    {
+      "id": "api-users-095",
+      "category": "structured-api",
+      "task": "List the first five active users with email",
+      "originalRequest": {
+        "query": "SELECT * FROM users"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, email FROM users LIMIT 5;"
+      },
+      "baselineBytes": 141751,
+      "cutdexBytes": 151,
+      "baselineApproximateToolResultTokens": 35438,
+      "cutdexApproximateToolResultTokens": 38,
+      "baselineApproximateToolContextTokens": 35480,
+      "cutdexApproximateToolContextTokens": 84,
+      "baselineApproximateRequestTokens": 42,
+      "cutdexApproximateRequestTokens": 46,
+      "optimizationLatencyMs": 0.006,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, email. LIMIT: The task asks for at most 5 records."
+    },
+    {
+      "id": "already-optimal-096",
+      "category": "already-optimal",
+      "task": "Find the five most recent failed payments",
+      "originalRequest": {
+        "query": "SELECT id, status, total, created_at FROM payments WHERE status = 'failed' ORDER BY created_at DESC LIMIT 5"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, total, created_at FROM payments WHERE status = 'failed' ORDER BY created_at DESC LIMIT 5"
+      },
+      "baselineBytes": 346,
+      "cutdexBytes": 346,
+      "baselineApproximateToolResultTokens": 87,
+      "cutdexApproximateToolResultTokens": 87,
+      "baselineApproximateToolContextTokens": 150,
+      "cutdexApproximateToolContextTokens": 150,
+      "baselineApproximateRequestTokens": 63,
+      "cutdexApproximateRequestTokens": 63,
+      "optimizationLatencyMs": 0.009,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "No safe transformation found."
+    },
+    {
+      "id": "sql-failed-orders-097",
+      "category": "sql",
+      "task": "Find the five most recent failed enterprise orders",
+      "originalRequest": {
+        "query": "SELECT * FROM orders"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, created_at FROM orders WHERE status = 'failed' AND customer_tier = 'enterprise' ORDER BY created_at DESC LIMIT 5;"
+      },
+      "baselineBytes": 999001,
+      "cutdexBytes": 241,
+      "baselineApproximateToolResultTokens": 249751,
+      "cutdexApproximateToolResultTokens": 61,
+      "baselineApproximateToolContextTokens": 249792,
+      "cutdexApproximateToolContextTokens": 130,
+      "baselineApproximateRequestTokens": 41,
+      "cutdexApproximateRequestTokens": 69,
+      "optimizationLatencyMs": 0.009,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, status, created_at. PREDICATE: The task explicitly asks for status = 'failed' and customer_tier = 'enterprise'. SORT: The task asks for the newest records. LIMIT: The task asks for at most 5 records."
+    },
+    {
+      "id": "sql-open-issues-098",
+      "category": "sql",
+      "task": "Give me the titles of the first ten open security issues",
+      "originalRequest": {
+        "query": "SELECT * FROM issues"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, title, number FROM issues WHERE status = 'open' AND label = 'security' LIMIT 10;"
+      },
+      "baselineBytes": 231921,
+      "cutdexBytes": 641,
+      "baselineApproximateToolResultTokens": 57981,
+      "cutdexApproximateToolResultTokens": 161,
+      "baselineApproximateToolContextTokens": 58023,
+      "cutdexApproximateToolContextTokens": 223,
+      "baselineApproximateRequestTokens": 42,
+      "cutdexApproximateRequestTokens": 62,
+      "optimizationLatencyMs": 0.012,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, status, title, number. PREDICATE: The task explicitly asks for status = 'open' and label = 'security'. LIMIT: The task asks for at most 10 records."
+    },
+    {
+      "id": "sql-error-logs-099",
+      "category": "sql",
+      "task": "Find the latest error logs for checkout",
+      "originalRequest": {
+        "query": "SELECT * FROM logs"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, error, created_at FROM logs ORDER BY created_at DESC;"
+      },
+      "baselineBytes": 406201,
+      "cutdexBytes": 29401,
+      "baselineApproximateToolResultTokens": 101551,
+      "cutdexApproximateToolResultTokens": 7351,
+      "baselineApproximateToolContextTokens": 101589,
+      "cutdexApproximateToolContextTokens": 7400,
+      "baselineApproximateRequestTokens": 38,
+      "cutdexApproximateRequestTokens": 49,
+      "optimizationLatencyMs": 0.008,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, error, created_at. SORT: The task asks for the newest records."
+    },
+    {
+      "id": "sql-total-failed-100",
+      "category": "sql-aggregate",
+      "task": "Count failed payments",
+      "originalRequest": {
+        "query": "SELECT COUNT(id) FROM payments"
+      },
+      "optimizedRequest": {
+        "query": "SELECT COUNT(id) FROM payments WHERE status = 'failed';"
+      },
+      "baselineBytes": 19,
+      "cutdexBytes": 19,
+      "baselineApproximateToolResultTokens": 5,
+      "cutdexApproximateToolResultTokens": 5,
+      "baselineApproximateToolContextTokens": 44,
+      "cutdexApproximateToolContextTokens": 50,
+      "baselineApproximateRequestTokens": 39,
+      "cutdexApproximateRequestTokens": 45,
+      "optimizationLatencyMs": 0.005,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PREDICATE: The task explicitly asks for status = 'failed'."
+    },
+    {
+      "id": "sql-join-101",
+      "category": "sql-unsupported",
+      "task": "Show recent orders with customer email",
+      "originalRequest": {
+        "query": "SELECT * FROM orders JOIN customers ON orders.customer_id = customers.id"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM orders JOIN customers ON orders.customer_id = customers.id"
+      },
+      "baselineBytes": 175501,
+      "cutdexBytes": 175501,
+      "baselineApproximateToolResultTokens": 43876,
+      "cutdexApproximateToolResultTokens": 43876,
+      "baselineApproximateToolContextTokens": 43930,
+      "cutdexApproximateToolContextTokens": 43930,
+      "baselineApproximateRequestTokens": 54,
+      "cutdexApproximateRequestTokens": 54,
+      "optimizationLatencyMs": 0.003,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The SQL parser could not establish a safe SELECT AST."
+    },
+    {
+      "id": "sql-ambiguous-102",
+      "category": "sql-ambiguous",
+      "task": "Summarize the relevant records",
+      "originalRequest": {
+        "query": "SELECT * FROM orders UNION SELECT * FROM archived_orders"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM orders UNION SELECT * FROM archived_orders"
+      },
+      "baselineBytes": 143701,
+      "cutdexBytes": 143701,
+      "baselineApproximateToolResultTokens": 35926,
+      "cutdexApproximateToolResultTokens": 35926,
+      "baselineApproximateToolContextTokens": 35973,
+      "cutdexApproximateToolContextTokens": 35973,
+      "baselineApproximateRequestTokens": 47,
+      "cutdexApproximateRequestTokens": 47,
+      "optimizationLatencyMs": 0.002,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The SQL parser could not establish a safe SELECT AST."
+    },
+    {
+      "id": "sql-control-103",
+      "category": "control",
+      "task": "Return every field for the audit export",
+      "originalRequest": {
+        "query": "SELECT * FROM audit_events"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM audit_events"
+      },
+      "baselineBytes": 32561,
+      "cutdexBytes": 32561,
+      "baselineApproximateToolResultTokens": 8141,
+      "cutdexApproximateToolResultTokens": 8141,
+      "baselineApproximateToolContextTokens": 8182,
+      "cutdexApproximateToolContextTokens": 8182,
+      "baselineApproximateRequestTokens": 41,
+      "cutdexApproximateRequestTokens": 41,
+      "optimizationLatencyMs": 0.003,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The task explicitly asks for the complete record shape."
+    },
+    {
+      "id": "sql-write-104",
+      "category": "write",
+      "task": "Delete failed orders",
+      "originalRequest": {
+        "query": "DELETE FROM orders WHERE status = 'failed'"
+      },
+      "optimizedRequest": {
+        "query": "DELETE FROM orders WHERE status = 'failed'"
+      },
+      "baselineBytes": 33,
+      "cutdexBytes": 33,
+      "baselineApproximateToolResultTokens": 9,
+      "cutdexApproximateToolResultTokens": 9,
+      "baselineApproximateToolContextTokens": 49,
+      "cutdexApproximateToolContextTokens": 49,
+      "baselineApproximateRequestTokens": 40,
+      "cutdexApproximateRequestTokens": 40,
+      "optimizationLatencyMs": 0,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "Write and unknown tools pass through unchanged."
+    },
+    {
+      "id": "graphql-issues-105",
+      "category": "graphql",
+      "task": "Show issue title and state",
+      "originalRequest": {
+        "query": "query Issues { issues { number title state labels avatarUrl updatedAt } }"
+      },
+      "optimizedRequest": {
+        "query": "query Issues {\n  number\n  title\n  state\n}"
+      },
+      "baselineBytes": 12961,
+      "cutdexBytes": 12961,
+      "baselineApproximateToolResultTokens": 3241,
+      "cutdexApproximateToolResultTokens": 3241,
+      "baselineApproximateToolContextTokens": 3290,
+      "cutdexApproximateToolContextTokens": 3283,
+      "baselineApproximateRequestTokens": 49,
+      "cutdexApproximateRequestTokens": 42,
+      "optimizationLatencyMs": 0.005,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "GRAPHQL_PROJECTION: Kept fields named by the task: number, title, state."
+    },
+    {
+      "id": "graphql-repos-106",
+      "category": "graphql",
+      "task": "Show repository name and URL",
+      "originalRequest": {
+        "query": "query Repositories { repositories { name url description languages stars } }"
+      },
+      "optimizedRequest": {
+        "query": "query Repositories {\n  name\n  url\n}"
+      },
+      "baselineBytes": 7121,
+      "cutdexBytes": 7121,
+      "baselineApproximateToolResultTokens": 1781,
+      "cutdexApproximateToolResultTokens": 1781,
+      "baselineApproximateToolContextTokens": 1831,
+      "cutdexApproximateToolContextTokens": 1822,
+      "baselineApproximateRequestTokens": 50,
+      "cutdexApproximateRequestTokens": 41,
+      "optimizationLatencyMs": 0.003,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "GRAPHQL_PROJECTION: Kept fields named by the task: name, url."
+    },
+    {
+      "id": "api-users-107",
+      "category": "structured-api",
+      "task": "List the first five active users with email",
+      "originalRequest": {
+        "query": "SELECT * FROM users"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, email FROM users LIMIT 5;"
+      },
+      "baselineBytes": 141751,
+      "cutdexBytes": 151,
+      "baselineApproximateToolResultTokens": 35438,
+      "cutdexApproximateToolResultTokens": 38,
+      "baselineApproximateToolContextTokens": 35480,
+      "cutdexApproximateToolContextTokens": 84,
+      "baselineApproximateRequestTokens": 42,
+      "cutdexApproximateRequestTokens": 46,
+      "optimizationLatencyMs": 0.006,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, email. LIMIT: The task asks for at most 5 records."
+    },
+    {
+      "id": "already-optimal-108",
+      "category": "already-optimal",
+      "task": "Find the five most recent failed payments",
+      "originalRequest": {
+        "query": "SELECT id, status, total, created_at FROM payments WHERE status = 'failed' ORDER BY created_at DESC LIMIT 5"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, total, created_at FROM payments WHERE status = 'failed' ORDER BY created_at DESC LIMIT 5"
+      },
+      "baselineBytes": 346,
+      "cutdexBytes": 346,
+      "baselineApproximateToolResultTokens": 87,
+      "cutdexApproximateToolResultTokens": 87,
+      "baselineApproximateToolContextTokens": 150,
+      "cutdexApproximateToolContextTokens": 150,
+      "baselineApproximateRequestTokens": 63,
+      "cutdexApproximateRequestTokens": 63,
+      "optimizationLatencyMs": 0.008,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "No safe transformation found."
+    },
+    {
+      "id": "sql-failed-orders-109",
+      "category": "sql",
+      "task": "Find the five most recent failed enterprise orders",
+      "originalRequest": {
+        "query": "SELECT * FROM orders"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, created_at FROM orders WHERE status = 'failed' AND customer_tier = 'enterprise' ORDER BY created_at DESC LIMIT 5;"
+      },
+      "baselineBytes": 999001,
+      "cutdexBytes": 241,
+      "baselineApproximateToolResultTokens": 249751,
+      "cutdexApproximateToolResultTokens": 61,
+      "baselineApproximateToolContextTokens": 249792,
+      "cutdexApproximateToolContextTokens": 130,
+      "baselineApproximateRequestTokens": 41,
+      "cutdexApproximateRequestTokens": 69,
+      "optimizationLatencyMs": 0.009,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, status, created_at. PREDICATE: The task explicitly asks for status = 'failed' and customer_tier = 'enterprise'. SORT: The task asks for the newest records. LIMIT: The task asks for at most 5 records."
+    },
+    {
+      "id": "sql-open-issues-110",
+      "category": "sql",
+      "task": "Give me the titles of the first ten open security issues",
+      "originalRequest": {
+        "query": "SELECT * FROM issues"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, title, number FROM issues WHERE status = 'open' AND label = 'security' LIMIT 10;"
+      },
+      "baselineBytes": 231921,
+      "cutdexBytes": 641,
+      "baselineApproximateToolResultTokens": 57981,
+      "cutdexApproximateToolResultTokens": 161,
+      "baselineApproximateToolContextTokens": 58023,
+      "cutdexApproximateToolContextTokens": 223,
+      "baselineApproximateRequestTokens": 42,
+      "cutdexApproximateRequestTokens": 62,
+      "optimizationLatencyMs": 0.011,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, status, title, number. PREDICATE: The task explicitly asks for status = 'open' and label = 'security'. LIMIT: The task asks for at most 10 records."
+    },
+    {
+      "id": "sql-error-logs-111",
+      "category": "sql",
+      "task": "Find the latest error logs for checkout",
+      "originalRequest": {
+        "query": "SELECT * FROM logs"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, error, created_at FROM logs ORDER BY created_at DESC;"
+      },
+      "baselineBytes": 406201,
+      "cutdexBytes": 29401,
+      "baselineApproximateToolResultTokens": 101551,
+      "cutdexApproximateToolResultTokens": 7351,
+      "baselineApproximateToolContextTokens": 101589,
+      "cutdexApproximateToolContextTokens": 7400,
+      "baselineApproximateRequestTokens": 38,
+      "cutdexApproximateRequestTokens": 49,
+      "optimizationLatencyMs": 0.015,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, error, created_at. SORT: The task asks for the newest records."
+    },
+    {
+      "id": "sql-total-failed-112",
+      "category": "sql-aggregate",
+      "task": "Count failed payments",
+      "originalRequest": {
+        "query": "SELECT COUNT(id) FROM payments"
+      },
+      "optimizedRequest": {
+        "query": "SELECT COUNT(id) FROM payments WHERE status = 'failed';"
+      },
+      "baselineBytes": 19,
+      "cutdexBytes": 19,
+      "baselineApproximateToolResultTokens": 5,
+      "cutdexApproximateToolResultTokens": 5,
+      "baselineApproximateToolContextTokens": 44,
+      "cutdexApproximateToolContextTokens": 50,
+      "baselineApproximateRequestTokens": 39,
+      "cutdexApproximateRequestTokens": 45,
+      "optimizationLatencyMs": 0.006,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PREDICATE: The task explicitly asks for status = 'failed'."
+    },
+    {
+      "id": "sql-join-113",
+      "category": "sql-unsupported",
+      "task": "Show recent orders with customer email",
+      "originalRequest": {
+        "query": "SELECT * FROM orders JOIN customers ON orders.customer_id = customers.id"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM orders JOIN customers ON orders.customer_id = customers.id"
+      },
+      "baselineBytes": 175501,
+      "cutdexBytes": 175501,
+      "baselineApproximateToolResultTokens": 43876,
+      "cutdexApproximateToolResultTokens": 43876,
+      "baselineApproximateToolContextTokens": 43930,
+      "cutdexApproximateToolContextTokens": 43930,
+      "baselineApproximateRequestTokens": 54,
+      "cutdexApproximateRequestTokens": 54,
+      "optimizationLatencyMs": 0.003,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The SQL parser could not establish a safe SELECT AST."
+    },
+    {
+      "id": "sql-ambiguous-114",
+      "category": "sql-ambiguous",
+      "task": "Summarize the relevant records",
+      "originalRequest": {
+        "query": "SELECT * FROM orders UNION SELECT * FROM archived_orders"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM orders UNION SELECT * FROM archived_orders"
+      },
+      "baselineBytes": 143701,
+      "cutdexBytes": 143701,
+      "baselineApproximateToolResultTokens": 35926,
+      "cutdexApproximateToolResultTokens": 35926,
+      "baselineApproximateToolContextTokens": 35973,
+      "cutdexApproximateToolContextTokens": 35973,
+      "baselineApproximateRequestTokens": 47,
+      "cutdexApproximateRequestTokens": 47,
+      "optimizationLatencyMs": 0.002,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The SQL parser could not establish a safe SELECT AST."
+    },
+    {
+      "id": "sql-control-115",
+      "category": "control",
+      "task": "Return every field for the audit export",
+      "originalRequest": {
+        "query": "SELECT * FROM audit_events"
+      },
+      "optimizedRequest": {
+        "query": "SELECT * FROM audit_events"
+      },
+      "baselineBytes": 32561,
+      "cutdexBytes": 32561,
+      "baselineApproximateToolResultTokens": 8141,
+      "cutdexApproximateToolResultTokens": 8141,
+      "baselineApproximateToolContextTokens": 8182,
+      "cutdexApproximateToolContextTokens": 8182,
+      "baselineApproximateRequestTokens": 41,
+      "cutdexApproximateRequestTokens": 41,
+      "optimizationLatencyMs": 0.003,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "The task explicitly asks for the complete record shape."
+    },
+    {
+      "id": "sql-write-116",
+      "category": "write",
+      "task": "Delete failed orders",
+      "originalRequest": {
+        "query": "DELETE FROM orders WHERE status = 'failed'"
+      },
+      "optimizedRequest": {
+        "query": "DELETE FROM orders WHERE status = 'failed'"
+      },
+      "baselineBytes": 33,
+      "cutdexBytes": 33,
+      "baselineApproximateToolResultTokens": 9,
+      "cutdexApproximateToolResultTokens": 9,
+      "baselineApproximateToolContextTokens": 49,
+      "cutdexApproximateToolContextTokens": 49,
+      "baselineApproximateRequestTokens": 40,
+      "cutdexApproximateRequestTokens": 40,
+      "optimizationLatencyMs": 0,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "Write and unknown tools pass through unchanged."
+    },
+    {
+      "id": "graphql-issues-117",
+      "category": "graphql",
+      "task": "Show issue title and state",
+      "originalRequest": {
+        "query": "query Issues { issues { number title state labels avatarUrl updatedAt } }"
+      },
+      "optimizedRequest": {
+        "query": "query Issues {\n  number\n  title\n  state\n}"
+      },
+      "baselineBytes": 12961,
+      "cutdexBytes": 12961,
+      "baselineApproximateToolResultTokens": 3241,
+      "cutdexApproximateToolResultTokens": 3241,
+      "baselineApproximateToolContextTokens": 3290,
+      "cutdexApproximateToolContextTokens": 3283,
+      "baselineApproximateRequestTokens": 49,
+      "cutdexApproximateRequestTokens": 42,
+      "optimizationLatencyMs": 0.006,
+      "baselineTaskSuccess": false,
+      "cutdexTaskSuccess": false,
+      "modified": true,
+      "safety": "safe",
+      "reason": "GRAPHQL_PROJECTION: Kept fields named by the task: number, title, state."
+    },
+    {
+      "id": "graphql-repos-118",
+      "category": "graphql",
+      "task": "Show repository name and URL",
+      "originalRequest": {
+        "query": "query Repositories { repositories { name url description languages stars } }"
+      },
+      "optimizedRequest": {
+        "query": "query Repositories {\n  name\n  url\n}"
+      },
+      "baselineBytes": 7121,
+      "cutdexBytes": 7121,
+      "baselineApproximateToolResultTokens": 1781,
+      "cutdexApproximateToolResultTokens": 1781,
+      "baselineApproximateToolContextTokens": 1831,
+      "cutdexApproximateToolContextTokens": 1822,
+      "baselineApproximateRequestTokens": 50,
+      "cutdexApproximateRequestTokens": 41,
+      "optimizationLatencyMs": 0.003,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "GRAPHQL_PROJECTION: Kept fields named by the task: name, url."
+    },
+    {
+      "id": "api-users-119",
+      "category": "structured-api",
+      "task": "List the first five active users with email",
+      "originalRequest": {
+        "query": "SELECT * FROM users"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, email FROM users LIMIT 5;"
+      },
+      "baselineBytes": 141751,
+      "cutdexBytes": 151,
+      "baselineApproximateToolResultTokens": 35438,
+      "cutdexApproximateToolResultTokens": 38,
+      "baselineApproximateToolContextTokens": 35480,
+      "cutdexApproximateToolContextTokens": 84,
+      "baselineApproximateRequestTokens": 42,
+      "cutdexApproximateRequestTokens": 46,
+      "optimizationLatencyMs": 0.006,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": true,
+      "safety": "safe",
+      "reason": "PROJECTION: Kept only fields named or implied by the task: id, email. LIMIT: The task asks for at most 5 records."
+    },
+    {
+      "id": "already-optimal-120",
+      "category": "already-optimal",
+      "task": "Find the five most recent failed payments",
+      "originalRequest": {
+        "query": "SELECT id, status, total, created_at FROM payments WHERE status = 'failed' ORDER BY created_at DESC LIMIT 5"
+      },
+      "optimizedRequest": {
+        "query": "SELECT id, status, total, created_at FROM payments WHERE status = 'failed' ORDER BY created_at DESC LIMIT 5"
+      },
+      "baselineBytes": 346,
+      "cutdexBytes": 346,
+      "baselineApproximateToolResultTokens": 87,
+      "cutdexApproximateToolResultTokens": 87,
+      "baselineApproximateToolContextTokens": 150,
+      "cutdexApproximateToolContextTokens": 150,
+      "baselineApproximateRequestTokens": 63,
+      "cutdexApproximateRequestTokens": 63,
+      "optimizationLatencyMs": 0.009,
+      "baselineTaskSuccess": true,
+      "cutdexTaskSuccess": true,
+      "modified": false,
+      "safety": "passed-through",
+      "reason": "No safe transformation found."
+    }
+  ]
 }

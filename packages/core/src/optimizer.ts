@@ -5,7 +5,21 @@ const defaultFields = ["id", "status", "total", "created_at"];
 const noChange = { bytes: 0, inputTokens: 0, percent: 0, measurement: "no_change" as const, note: "The request was not changed." };
 const notMeasured = { bytes: null, inputTokens: null, percent: null, measurement: "not_measured" as const, note: "Cutdex did not observe the tool result. Measure before/after result bytes or provider usage in your adapter." };
 function hasAny(task: string, words: string[]): boolean { const normalized = task.toLowerCase(); return words.some((word) => normalized.includes(word)) }
-function fieldsFromTask(task: string): string[] { const fields = new Set<string>(["id"]); const normalized = task.toLowerCase(); if (hasAny(normalized, ["status", "failed", "open", "state"])) fields.add("status"); if (hasAny(normalized, ["total", "amount", "price", "cost"])) fields.add("total"); if (hasAny(normalized, ["customer", "name"])) fields.add("customer_name"); if (hasAny(normalized, ["error", "reason"])) fields.add("error"); if (hasAny(normalized, ["recent", "newest", "latest", "created"])) fields.add("created_at"); return fields.size === 1 ? defaultFields.slice(0, 3) : [...fields] }
+function fieldsFromTask(task: string): string[] {
+  const fields = new Set<string>(["id"]);
+  const normalized = task.toLowerCase();
+  if (hasAny(normalized, ["status", "failed", "open", "state"])) fields.add("status");
+  if (hasAny(normalized, ["total", "amount", "price", "cost"])) fields.add("total");
+  if (hasAny(normalized, ["customer", "name"])) fields.add("customer_name");
+  if (hasAny(normalized, ["error", "reason"])) fields.add("error");
+  if (hasAny(normalized, ["title", "subject", "summary"])) fields.add("title");
+  if (hasAny(normalized, ["issue", "number", "ticket"])) fields.add("number");
+  if (hasAny(normalized, ["label", "tag"])) fields.add("label");
+  if (hasAny(normalized, ["url", "link"])) fields.add("url");
+  if (hasAny(normalized, ["email"])) fields.add("email");
+  if (hasAny(normalized, ["recent", "newest", "latest", "created", "updated"])) fields.add("created_at");
+  return fields.size === 1 ? defaultFields.slice(0, 3) : [...fields];
+}
 function pass(name: string, before: string, after: string, reason: string, expectedBenefit: string): PassResult { return { name, before, after, reason, expectedBenefit, confidence: "high" } }
 function inferLimit(task: string): number | undefined { const match = task.match(/\b(?:five|first|top|last|latest)\s+(\d+)\b/i); if (match) return Number(match[1]); if (/\bfive\b/i.test(task)) return 5; if (/\bten\b/i.test(task)) return 10; return undefined }
 function inferWhere(task: string): string[] { const normalized = task.toLowerCase(); const conditions: string[] = []; if (normalized.includes("failed")) conditions.push("status = 'failed'"); else if (normalized.includes("open")) conditions.push("status = 'open'"); if (normalized.includes("enterprise")) conditions.push("customer_tier = 'enterprise'"); if (normalized.includes("security")) conditions.push("label = 'security'"); return conditions }

@@ -1,10 +1,10 @@
 # Hosted API (optional)
 
-Cutdex is designed to run as local middleware immediately before a read-only tool call. It returns an optimized request; the caller remains responsible for executing that request against its database, API, or MCP tool. Cutdex does not call a model or the OpenAI API.
+Cutdex is designed to run as middleware immediately before a read-only tool call. It returns an optimized request; the caller remains responsible for executing that request against its database, API, or MCP tool.
 
 ## Authentication
 
-Send a Siftline API key as a bearer token:
+Send a Cutdex API key as a bearer token:
 
 ```http
 Authorization: Bearer sift_live_...
@@ -31,12 +31,23 @@ Authorization: Bearer sift_live_...
 
 The response includes `originalRequest`, `optimizedRequest`, independent applied/skipped passes, confidence, safety, explanation, request ID, and remaining quota. Because the optimizer does not execute or observe the source tool, transformed calls report savings as `not_measured`; adapters should record before/after result bytes or provider usage. Writes and unknown operations pass through unchanged.
 
+For an application that owns the source-tool executor, use the SDK wrapper so the model sees only the compacted result without an additional agent round-trip:
+
+```ts
+import { executeWithCutdex } from "@cutdex/core";
+
+const run = await executeWithCutdex(input, (request) => database.query(request.query));
+return run.response;
+```
+
+The wrapper only projects fields explicitly named by the task and applies an explicit row limit. Ambiguous results are preserved. It reports serialized-byte savings; provider token savings must still be measured from paired usage traces.
+
 ## Account endpoints
 
 - `GET /api/v1/keys` lists key metadata for a Firebase-authenticated user.
 - `POST /api/v1/keys` creates a key and returns the secret once.
 - `DELETE /api/v1/keys?id=...` revokes a key.
-- `GET /api/v1/auth/verify` validates a Siftline key and returns quota information.
+- `GET /api/v1/auth/verify` validates a Cutdex key and returns quota information.
 - `GET /api/v1/health` reports service readiness without exposing credentials.
 
 The account endpoints require a Firebase ID token. Firestore should deny direct client access; the server uses a service account.

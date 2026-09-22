@@ -1,19 +1,30 @@
 # Connect Codex
 
-Official Codex clients support local STDIO MCP servers. Cutdex uses that connection as an explicit local request optimizer.
+Codex supports local STDIO MCP servers. Cutdex uses that connection as an explicit request optimizer.
 
 ```bash
-npx cutdex@latest connect codex
+npx cutdex@latest login
+cutdex connect codex
 ```
 
-The second command registers:
+`cutdex login` opens the hosted key page in your browser. Sign in with Google, create a key, click **Copy key**, and paste it into the waiting terminal prompt. Installing or running the public package does not require `npm login`; npm authentication is only needed to publish.
+
+The second command registers the exact built CLI executable:
 
 ```bash
-codex mcp add cutdex -- npx -y cutdex@latest mcp
+codex mcp add cutdex -- node /path/to/cutdex/dist/cli/index.js mcp
 ```
 
-Restart Codex and run `/mcp` to verify the server. Before a broad read-only SQL or GraphQL-style call, Codex can call `cutdex_optimize`, then execute the returned `optimizedRequest` with the original source tool.
+Restart Codex and run `/mcp` to verify the server. Before a broad read-only SQL or GraphQL-style call, Codex can call `cutdex_optimize`, then execute the returned `optimizedRequest` with the original source tool. The MCP response is intentionally compact: it omits the unchanged original request and returns only the optimized request plus the passes that justify it.
 
-The MCP server is local-first. It makes no model request and no OpenAI API call, so model usage remains in the Codex client you signed into. Verify the active allowance with `/status`.
+`cutdex connect codex` also installs a clearly marked, repeat-safe block in the global `AGENTS.md` inside `CODEX_HOME` (or `~/.codex`). To remove the integration later:
 
-Important boundary: MCP adds a tool. It does not silently intercept Codex's built-in shell, browser, filesystem, or other MCP servers. Automatic interception requires an application-level middleware adapter around the actual tool executor. `executeWithCutdex` provides that local pre-execution boundary for custom agents.
+```bash
+cutdex disconnect codex
+```
+
+Disconnect removes only Cutdex's MCP registration and managed instruction block; unrelated Codex configuration and instructions are preserved.
+
+The package startup art is not part of command output. It appears once after a successful package download when the terminal exposes a session id.
+
+Important boundary: MCP adds a tool. It does not silently intercept Codex's built-in shell, browser, filesystem, or other MCP servers, and it does not reduce the number of reasoning/tool steps by itself. The Codex path reduces eligible structured read payloads when Codex follows the instruction. For a true pre- and post-execution boundary with no extra model round-trip, use `executeWithCutdex` in the application or adapter that owns the source-tool executor. Without a hosted key, `cutdex mcp` runs the same optimizer locally.

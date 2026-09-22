@@ -57,9 +57,8 @@ async function rollback(transaction: string): Promise<void> {
   await firebaseFetch(`https://firestore.googleapis.com/v1/projects/${projectId()}/databases/(default)/documents:rollback`, { method: "POST", body: JSON.stringify({ transaction }) }).catch(() => undefined);
 }
 
-export async function authorizeApiKey(value: string, options: { consume?: boolean } = {}): Promise<AuthorizedKey> {
-  const consume = options.consume ?? true;
-  const devKeys = (process.env.SIFTLINE_DEV_API_KEYS ?? "").split(",").map((key) => key.trim()).filter(Boolean);
+export async function authorizeApiKey(value: string): Promise<AuthorizedKey> {
+  const devKeys = (process.env.CUTDEX_DEV_API_KEYS ?? "").split(",").map((key) => key.trim()).filter(Boolean);
   if (devKeys.includes(value)) {
     const current = devUsage.get(value) ?? {};
     const rate = consume ? consumeRateLimit(current) : inspectRateLimit(current);
@@ -68,15 +67,7 @@ export async function authorizeApiKey(value: string, options: { consume?: boolea
     return { id: "dev", userId: "development", name: "Development key", lastFour: value.slice(-4), rate };
   }
   const parsed = parseApiKey(value); if (!parsed) throw Object.assign(new Error("Invalid API key"), { statusCode: 401 });
-  const pepper = required("SIFTLINE_KEY_PEPPER");
-  if (!consume) {
-    const response = await firebaseFetch(`/apiKeys/${encodeURIComponent(parsed.id)}`);
-    if (!response.ok) throw Object.assign(new Error("Invalid API key"), { statusCode: 401 });
-    const document = await response.json() as FirestoreDocument;
-    const record = decodeKey(document);
-    if (record.status !== "active" || !safeHashEqual(record.hash, hashApiKeySecret(parsed.secret, pepper))) throw Object.assign(new Error("Invalid API key"), { statusCode: 401 });
-    return { id: record.id, userId: record.userId, name: record.name, lastFour: record.lastFour, rate: inspectRateLimit(record, { rpm: record.rpmLimit, monthly: record.monthlyLimit }) };
-  }
+  const pepper = required("CUTDEX_KEY_PEPPER");
   const begin = await firebaseFetch(`https://firestore.googleapis.com/v1/projects/${projectId()}/databases/(default)/documents:beginTransaction`, { method: "POST", body: JSON.stringify({ options: { readWrite: {} } }) });
   if (!begin.ok) throw new Error("Could not start rate-limit transaction");
   const { transaction } = await begin.json() as { transaction: string };
