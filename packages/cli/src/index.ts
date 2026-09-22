@@ -91,8 +91,8 @@ function dashboard(): ReturnType<typeof createServer> {
     if (req.url === "/api/status") return json(res, { service: "cutdex", proxy: `http://localhost:${proxyPort}`, dashboard: `http://localhost:${dashboardPort}`, hosted: Boolean(readConfig().apiKey) });
     const file = req.url === "/" ? "/index.html" : req.url ?? "/index.html";
     const path = join(dist, file.replace(/\.\.+/g, "").replace(/^\//, ""));
-    if (existsSync(path)) { res.writeHead(200, { "content-type": path.endsWith(".html") ? "text/html" : "text/plain" }); res.end(readFileSync(path)); return }
-    if (existsSync(join(dist, "index.html"))) { res.writeHead(200, { "content-type": "text/html" }); res.end(readFileSync(join(dist, "index.html"))); return }
+    if (existsSync(path)) { res.writeHead(200, { "content-type": contentType(path) }); res.end(readFileSync(path)); return }
+    if (existsSync(join(dist, "index.html"))) { res.writeHead(200, { "content-type": "text/html; charset=utf-8" }); res.end(readFileSync(join(dist, "index.html"))); return }
     res.writeHead(200, { "content-type": "text/plain" }); res.end("Build the dashboard with pnpm --dir apps/web build, then run cutdex start.");
   });
 }
@@ -339,7 +339,7 @@ async function main(): Promise<void> {
   if (command === "optimize" || command === "explain") { const target = process.argv[3]; if (!target) throw new Error("Provide a trace JSON path."); const trace = JSON.parse(readFileSync(resolve(target), "utf8")) as OptimizeInput; console.log(JSON.stringify(await optimize(trace), null, 2)); return }
   if (command !== "start") { help(); return }
   const proxyServer = proxy().listen(proxyPort); const dashboardServer = dashboard().listen(dashboardPort);
-  console.log(`Proxy      http://localhost:${proxyPort}\nDashboard  http://localhost:${dashboardPort}\nMode       ${useHostedApi() ? "hosted opt-in" : "local default"}\nBilling    optimizer makes no OpenAI API calls\n\nWaiting for agent traffic...`);
+  console.log(`Proxy      http://localhost:${proxyPort}\nDashboard  http://localhost:${dashboardPort}\nMode       ${readConfig().apiKey ? "hosted" : "local"}\nBilling    optimizer makes no OpenAI API calls\n\nWaiting for agent traffic...`);
   const close = () => { proxyServer.close(); dashboardServer.close(); process.exit(0) };
   process.on("SIGINT", close); process.on("SIGTERM", close);
 }

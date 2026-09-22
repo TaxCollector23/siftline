@@ -125,6 +125,15 @@ nav a:hover, a:hover { color: var(--orange); }
   border-right: 1px solid var(--line);
 }
 .truth > p { font-size: 18px; line-height: 1.5; max-width: 750px; margin: 34px 0 0; }
+.billing-boundary { border-top: 1px solid var(--ink); padding: 32px 0 105px; }
+.billing-boundary h2 { font: 600 clamp(38px, 5.4vw, 70px)/.92 'Syne', sans-serif; letter-spacing: -.055em; margin: 26px 0 54px; max-width: 900px; }
+.boundary-grid { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); }
+.boundary-grid > div { padding: 24px 28px 0 0; border-right: 1px solid var(--line); }
+.boundary-grid > div:not(:first-child) { padding-left: 28px; }
+.boundary-grid > div:last-child { border-right: 0; }
+.boundary-grid strong { display: block; color: var(--orange); font: 600 12px 'IBM Plex Mono', monospace; text-transform: uppercase; margin-bottom: 14px; }
+.boundary-grid p { color: var(--muted); line-height: 1.55; margin: 0; max-width: 320px; }
+.boundary-grid code { color: var(--ink); font: 13px 'IBM Plex Mono', monospace; }
 
 .usage-intro { display: flex; justify-content: space-between; align-items: end; gap: 40px; }
 .usage-intro h2 { margin-bottom: 0; }
@@ -285,6 +294,9 @@ textarea {
   .terminal-art { box-shadow: 8px 8px 0 var(--orange); }
   .truth-grid { grid-template-columns: 1fr; }
   .rewrite-arrow { border: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 10px; }
+  .boundary-grid { grid-template-columns: 1fr; }
+  .boundary-grid > div, .boundary-grid > div:not(:first-child) { padding: 20px 0; border-right: 0; border-bottom: 1px solid var(--line); }
+  .boundary-grid > div:last-child { border-bottom: 0; }
   .connection-note, .usage-loss, .method { grid-template-columns: 1fr; }
   .bench-table { grid-template-columns: 1fr; }
   .bench-table div, .bench-table div:not(:first-child) {
