@@ -1,5 +1,5 @@
 import type { ApiRequest, ApiResponse } from "../_lib/http.js";
-import { bearerToken, bodySizeOkay, prepareResponse, requestId } from "../_lib/http.js";
+import { bearerToken, bodySizeOkay, prepareResponse, publicErrorMessage, requestId } from "../_lib/http.js";
 import { authorizeApiKey } from "../_lib/firebase.js";
 import { optimizeToolCall, type OptimizeInput } from "../../packages/core/src/index.js";
 
@@ -10,7 +10,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
   const token = bearerToken(req); if (!token) { res.status(401).json({ error: "missing_api_key" }); return }
   try {
     const input = req.body as OptimizeInput;
-    if (!input || typeof input.task !== "string" || !input.tool || typeof input.tool.name !== "string" || !input.request || typeof input.request !== "object") { res.status(400).json({ error: "invalid_request", message: "Expected task, tool, and request." }); return }
+    if (!input || typeof input.task !== "string" || input.task.trim().length === 0 || input.task.length > 20_000 || !input.tool || Array.isArray(input.tool) || typeof input.tool.name !== "string" || input.tool.name.trim().length === 0 || !input.request || Array.isArray(input.request) || typeof input.request !== "object") { res.status(400).json({ error: "invalid_request", message: "Expected a non-empty task, tool name, and request object." }); return }
     const key = await authorizeApiKey(token);
     const result = optimizeToolCall(input);
     res.setHeader("X-RateLimit-Remaining-Minute", String(key.rate.remainingMinute));
@@ -20,6 +20,6 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const status = Number((error as { statusCode?: number }).statusCode ?? 500);
     const rate = (error as { rate?: { remainingMinute: number; remainingMonth: number } }).rate;
     if (rate) { res.setHeader("X-RateLimit-Remaining-Minute", String(rate.remainingMinute)); res.setHeader("X-RateLimit-Remaining-Month", String(rate.remainingMonth)) }
-    res.status(status).json({ error: status === 429 ? "rate_limited" : status === 401 ? "authentication_failed" : "service_unavailable", message: error instanceof Error ? error.message : "Optimization failed", requestId: requestId(req) });
+    res.status(status).json({ error: status === 429 ? "rate_limited" : status === 401 ? "authentication_failed" : "service_unavailable", message: publicErrorMessage(error, status, "Optimization failed"), requestId: requestId(req) });
   }
 }

@@ -3,11 +3,11 @@
 Codex supports local STDIO MCP servers. Cutdex uses that connection as an explicit request optimizer.
 
 ```bash
-npx cutdex@latest login
-cutdex connect codex
+npx cutdex@latest connect codex
+cutdex doctor
 ```
 
-`cutdex login` opens the hosted key page in your browser. Sign in with Google, create a key, click **Copy key**, and paste it into the waiting terminal prompt. Installing or running the public package does not require `npm login`; npm authentication is only needed to publish.
+Local mode does not require an API key. `cutdex login` is only for the optional hosted quota service: it opens the hosted key page, verifies the key you paste into the waiting terminal prompt, and stores it with owner-only permissions. Installing or running the public package does not require `npm login`; npm authentication is only needed to publish.
 
 The second command registers the exact built CLI executable:
 
@@ -27,4 +27,4 @@ Disconnect removes only Cutdex's MCP registration and managed instruction block;
 
 The package startup art is not part of command output. It appears once after a successful package download when the terminal exposes a session id.
 
-Important boundary: MCP adds a tool. It does not silently intercept Codex's built-in shell, browser, filesystem, or other MCP servers, and it does not reduce the number of reasoning/tool steps by itself. The Codex path reduces eligible structured read payloads when Codex follows the instruction. For a true pre- and post-execution boundary with no extra model round-trip, use `executeWithCutdex` in the application or adapter that owns the source-tool executor. Without a hosted key, `cutdex mcp` runs the same optimizer locally.
+Important boundary: MCP adds a tool. It does not silently intercept Codex's built-in shell, browser, filesystem, or other MCP servers, and it does not reduce the number of reasoning/tool steps by itself. The Codex path reduces eligible structured read payloads when Codex follows the instruction. For a true pre- and post-execution boundary with no extra model round-trip, use `executeWithCutdex` in the application or adapter that owns the source-tool executor. Without a hosted key, `cutdex mcp` runs the same optimizer locally. The local proxy binds to `127.0.0.1` by default; `CUTDEX_HOST` is an explicit opt-in override.

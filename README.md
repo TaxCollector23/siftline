@@ -27,9 +27,9 @@ LIMIT 5;
 
 Run `pnpm benchmark` to regenerate [`benchmarks/results/latest.json`](benchmarks/results/latest.json) and [`benchmarks/results/latest.md`](benchmarks/results/latest.md). The landing page loads the generated JSON; it does not contain hand-entered marketing numbers.
 
-The deterministic run uses 120 synthetic tasks and reports fixture bytes, approximate request-plus-result context, task-success delta, optimization latency, per-case requests, optimized calls, and unchanged controls. The current 81.3% tool-result and 81.2% request-plus-result context figures are local fixture measurements—not provider billing—and do not promise more ChatGPT/Codex subscription usage.
+The deterministic run uses 120 synthetic tasks and reports fixture bytes, approximate request-plus-result context, task-success delta, optimization latency, per-case requests, optimized calls, and unchanged controls. The current 81.8% tool-result and 81.7% request-plus-result context figures are local fixture measurements—not provider billing—and do not promise more ChatGPT/Codex subscription usage. The GraphQL fixture now checks that a rewrite preserves the nested response shape; unsupported nesting passes through.
 
-The public npm package is installable without npm authentication. Run `npx cutdex@latest login` or install it globally with `npm install --global cutdex`; `cutdex login` opens the hosted key page, then verifies the key you paste back into the terminal. The repository includes a tag-based GitHub Actions release using npm trusted publishing, so the maintainer does not need a local npm token after configuring the package's Trusted Publisher as `TaxCollector23/siftline`, workflow `publish.yml`.
+The public npm package is installable without npm authentication. Run `npx cutdex@latest connect codex` for local mode or install it globally with `npm install --global cutdex`. Hosted quota mode is optional: `cutdex login` opens the key page, then verifies the key you paste back into the terminal. The repository includes a tag-based GitHub Actions release using npm trusted publishing, so the maintainer does not need a local npm token after configuring the package's Trusted Publisher as `TaxCollector23/siftline`, workflow `publish.yml`.
 
 To release a version after that one-time npm setup:
 
@@ -40,7 +40,7 @@ git push origin v0.3.2
 
 Only publishing needs npm authorization. Public installs and `npx cutdex` do not.
 
-Running bare `cutdex` shows the orange CutDex mark and only the essential connection commands. Subcommands stay quiet. The package post-install card still appears once after a successful download when the terminal exposes a session id.
+Running bare `cutdex` shows the orange CutDex mark and only the essential connection commands. Subcommands stay quiet. The package post-install card still appears once after a successful download when the terminal exposes a session id. `cutdex start` binds to `127.0.0.1` by default; set `CUTDEX_HOST`, `CUTDEX_PROXY_PORT`, or `CUTDEX_DASHBOARD_PORT` only when you intentionally need a different local setup.
 
 `pnpm benchmark:real` measures the configured HTTP optimizer path against a small live request set. It uses `CUTDEX_BENCHMARK_API_URL` (default `http://localhost:4318/optimize`) and optional `CUTDEX_API_KEY`, writes `benchmarks/results/real-latest.json`, and never calls a source database or fabricates provider billing.
 
@@ -57,7 +57,9 @@ pnpm build
 pnpm dev
 ```
 
-`pnpm dev` runs the Vite site. `cutdex start` remains available for local development; the intended user path is the hosted API plus the CLI credential and MCP connection.
+`pnpm dev` runs the Vite site. `cutdex start` remains available for local development; the intended default user path is the local optimizer plus MCP connection. Hosted API credentials are optional.
+
+The release gate is reproducible with `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm benchmark`, `pnpm audit --prod`, `pnpm build`, and `npm pack --dry-run`. GitHub CI also runs OSV dependency scanning and CodeQL.
 
 ## CLI
 

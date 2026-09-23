@@ -1,5 +1,5 @@
 import type { ApiRequest, ApiResponse } from "../_lib/http.js";
-import { bearerToken, bodySizeOkay, prepareResponse, requestId } from "../_lib/http.js";
+import { bearerToken, bodySizeOkay, prepareResponse, publicErrorMessage, requestId } from "../_lib/http.js";
 import { createUserKey, listUserKeys, revokeUserKey, verifyFirebaseIdToken } from "../_lib/firebase.js";
 import { DEFAULT_MONTHLY_LIMIT, DEFAULT_RPM_LIMIT, generateApiKey, hashApiKeySecret, MAX_KEYS_PER_ACCOUNT } from "../../packages/api/src/index.js";
 
@@ -19,5 +19,5 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     }
     if (req.method === "DELETE") { const id = typeof req.query.id === "string" ? req.query.id : ""; if (!id) { res.status(400).json({ error: "missing_key_id" }); return } await revokeUserKey(id, identity.uid); res.status(200).json({ ok: true, requestId: requestId(req) }); return }
     res.status(405).json({ error: "method_not_allowed" });
-  } catch (error) { const status = Number((error as { statusCode?: number }).statusCode ?? 500); res.status(status).json({ error: status === 401 ? "authentication_failed" : "service_unavailable", message: error instanceof Error ? error.message : "Request failed", requestId: requestId(req) }) }
+  } catch (error) { const status = Number((error as { statusCode?: number }).statusCode ?? 500); res.status(status).json({ error: status === 401 ? "authentication_failed" : "service_unavailable", message: publicErrorMessage(error, status, "Request failed"), requestId: requestId(req) }) }
 }

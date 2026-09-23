@@ -2,34 +2,109 @@ import { useEffect, useMemo, useState } from "react";
 import { optimizeToolCall } from "@cutdex/core";
 import Account from "./Account";
 
-type Bench = { toolTokenReductionPercent: number; estimatedContextReductionPercent: number; taskSuccessDelta: number; sampleCount: number; baselinePassed: number; optimizedPassed: number; dataReductionPercent: number; baselineContextTokens: number; cutdexContextTokens: number; estimatedInputCostUsd: { baseline: number; cutdex: number; saved: number; inputPerMillion: number } };
-const fallback: Bench = { toolTokenReductionPercent: 81.3, estimatedContextReductionPercent: 81.2, taskSuccessDelta: 0, sampleCount: 120, baselinePassed: 115, optimizedPassed: 115, dataReductionPercent: 81.3, baselineContextTokens: 5383330, cutdexContextTokens: 1012760, estimatedInputCostUsd: { baseline: 16.15, cutdex: 3.04, saved: 13.11, inputPerMillion: 3 } };
+type Bench = {
+  toolTokenReductionPercent: number;
+  estimatedContextReductionPercent: number;
+  taskSuccessDelta: number;
+  sampleCount: number;
+  baselinePassed: number;
+  optimizedPassed: number;
+  dataReductionPercent: number;
+  baselineContextTokens: number;
+  cutdexContextTokens: number;
+  estimatedInputCostUsd: { baseline: number; cutdex: number; saved: number; inputPerMillion: number };
+};
+
+const fallback: Bench = {
+  toolTokenReductionPercent: 81.8,
+  estimatedContextReductionPercent: 81.7,
+  taskSuccessDelta: 0,
+  sampleCount: 120,
+  baselinePassed: 115,
+  optimizedPassed: 115,
+  dataReductionPercent: 81.8,
+  baselineContextTokens: 5_383_330,
+  cutdexContextTokens: 984_190,
+  estimatedInputCostUsd: { baseline: 16.15, cutdex: 2.95, saved: 13.20, inputPerMillion: 3 },
+};
+
 const sampleTask = "Find the five most recent failed orders";
 const sampleQuery = "SELECT * FROM orders;";
 
-function Number({ value, suffix = "%" }: { value: number; suffix?: string }) { return <>{value.toFixed(1)}{suffix}</> }
+function Number({ value, suffix = "%" }: { value: number; suffix?: string }) { return <>{value.toFixed(1)}{suffix}</>; }
 
 export default function App() {
   const [bench, setBench] = useState<Bench>(fallback);
   const [task, setTask] = useState(sampleTask);
   const [query, setQuery] = useState(sampleQuery);
-  useEffect(() => { fetch("/latest.json").then((res) => res.ok ? res.json() : fallback).then((value: Partial<Bench>) => setBench({ ...fallback, ...value })).catch(() => undefined) }, []);
+
+  useEffect(() => {
+    fetch(`/latest.json?version=${Date.now()}`)
+      .then((response) => response.ok ? response.json() : fallback)
+      .then((value: Partial<Bench>) => setBench({ ...fallback, ...value }))
+      .catch(() => undefined);
+  }, []);
+
   const result = useMemo(() => optimizeToolCall({ task, tool: { name: "database.query", kind: "READ", readOnly: true }, request: { query } }), [task, query]);
   if (window.location.pathname === "/benchmarks") return <Benchmarks bench={bench} />;
   if (window.location.pathname === "/account") return <Account />;
+
   return <main>
     <Header />
-    <section className="hero wrap"><div className="hero-copy-block"><h1>Cut Codex Usage by <strong><Number value={bench.estimatedContextReductionPercent} /></strong></h1><p><strong>Cutdex reduces unnecessary Codex tool output before it reaches your context, cutting token usage while keeping the information Codex actually needs to work.</strong></p><div className="hero-proof"><b><Number value={bench.estimatedContextReductionPercent} /> less measured tool context</b><span>{bench.sampleCount} deterministic cases · {bench.taskSuccessDelta.toFixed(1)}pp task-success change</span></div><div className="hero-links"><a className="primary-link" href="#connect">Install local mode <span>↓</span></a><a href="#billing">See the billing boundary <span>↓</span></a></div></div><TerminalArt /></section>
+    <section className="hero wrap">
+      <div className="hero-copy-block">
+        <p className="eyebrow">Local-first · source-side optimization</p>
+        <h1>Cut eligible tool context by <strong><Number value={bench.estimatedContextReductionPercent} /></strong></h1>
+        <p><strong>Cutdex narrows read-only SQL and GraphQL requests before the source returns data, so less irrelevant tool output reaches the model.</strong></p>
+        <div className="hero-proof"><b><Number value={bench.estimatedContextReductionPercent} /> less measured tool context</b><span>{bench.sampleCount} deterministic cases · {bench.taskSuccessDelta.toFixed(1)}pp task-success change</span></div>
+        <div className="hero-links"><a className="primary-link" href="#connect">Install local mode <span>↓</span></a><a href="#proof">See the boundary <span>↓</span></a></div>
+        <p className="claim-note">Fixture result, not a Codex bill. Your real savings depend on how many eligible reads your agent makes.</p>
+      </div>
+      <TerminalArt />
+    </section>
+
+    <section className="reality wrap" id="proof">
+      <div className="reality-lede"><p className="eyebrow">The honest boundary</p><h2>One command wires the path. It does not rewrite every Codex tool.</h2><p>That distinction is the product: Cutdex is deterministic middleware for eligible structured reads, not a claim that it can intercept shell, browser, filesystem, reasoning, or every MCP server.</p></div>
+      <div className="reality-grid">
+        <div><strong>Guaranteed locally</strong><p>The SQL/GraphQL transformer makes no model request and passes writes, unknown tools, and unsupported shapes through unchanged.</p></div>
+        <div><strong>Codex integration</strong><p><code>connect codex</code> installs an MCP tool plus managed instructions. Codex must choose that tool before a broad read.</p></div>
+        <div><strong>Strongest measurement</strong><p><code>executeWithCutdex</code> wraps an executor, compacts the structured result, and avoids an extra model round-trip.</p></div>
+      </div>
+    </section>
+
     <section className="truth wrap"><h2>What it actually changes</h2><div className="truth-grid"><div><strong>Before</strong><code>SELECT * FROM orders;</code><span>42 fields × 1,000 rows</span></div><div className="rewrite-arrow">→</div><div><strong>After</strong><code>SELECT id, status, created_at<br />FROM orders<br />WHERE status = 'failed'<br />ORDER BY created_at DESC<br />LIMIT 5;</code><span>3 fields × 5 rows</span></div></div><p>Only read requests are narrowed. Writes, unsupported syntax, and ambiguous tasks pass through unchanged.</p></section>
-    <section className="usage-proof wrap" id="usage"><div className="usage-intro"><h2>What the run costs.</h2><p>This 120-case fixture measures the request plus returned result. At the illustrative $<Number value={bench.estimatedInputCostUsd.inputPerMillion} suffix="" /> per million input tokens:</p></div><div className="usage-cards"><div className="usage-card"><span>Without CutDex</span><strong>{bench.baselineContextTokens.toLocaleString()} tokens</strong><small>${bench.estimatedInputCostUsd.baseline.toFixed(2)} input cost</small></div><div className="usage-card usage-card-after"><span>With CutDex</span><strong>{bench.cutdexContextTokens.toLocaleString()} tokens</strong><small>${bench.estimatedInputCostUsd.cutdex.toFixed(2)} input cost</small></div><div className="usage-saved"><span>Measured saving</span><strong>${bench.estimatedInputCostUsd.saved.toFixed(2)}</strong><small>{bench.estimatedContextReductionPercent}% less input context</small></div></div><p className="usage-note">This is not a Codex bill: it excludes system prompts, history, reasoning, generated output, and provider-specific tokenization. For an actual run, compare paired provider usage with <code>cutdex analyze traces.jsonl</code>.</p><div className="usage-loss"><strong>What is lost</strong><span>Only unrequested fields and rows from eligible read results. Writes, reasoning, code generation, and ambiguous calls are not compressed.</span></div></section>
-    <section className="billing-boundary wrap" id="billing"><h2>The model stays in your Codex plan.</h2><div className="boundary-grid"><div><strong>Cutdex</strong><p>Runs locally, makes zero model requests, and does not call the OpenAI API.</p></div><div><strong>Codex</strong><p>Runs the actual task with the account and client you signed into. Verify the allowance with <code>/status</code>.</p></div><div><strong>Boundary</strong><p>Only eligible structured reads are narrowed. Reasoning and unrelated tools remain outside this path.</p></div></div></section>
-    <section className="connect wrap" id="connect"><h2>Connect Codex in two commands.</h2><div className="steps"><div><b>1</b><div><h3>Register the local optimizer</h3><p>No API key is required for the default path.</p><code>npx cutdex@latest connect codex</code></div></div><div><b>2</b><div><h3>Restart Codex and verify</h3><p>Run <code>/mcp</code> and <code>cutdex doctor</code>.</p><code>cutdex doctor</code></div></div></div><div className="connection-note"><strong>Optional hosted mode</strong><p>Hosted keys are only for remote quotas. The local MCP path is the plan-safe default and makes no OpenAI API call.</p><strong>Scope</strong><p>Codex mode reduces eligible structured read payloads when Codex follows the instruction. It does not reduce reasoning or intercept built-in shell, browser, filesystem, or other MCP tools. For a real pre/post boundary with no extra model round-trip, wrap your executor with <code>executeWithCutdex</code>.</p></div></section>
-    <section className="playground wrap" id="playground"><div className="play-head"><h2>See a request shrink.</h2><p>This demo runs locally in the browser. No key or model call.</p></div><div className="play-grid"><label>Task<textarea value={task} onChange={(event) => setTask(event.target.value)} /></label><label>Original tool call<textarea value={query} onChange={(event) => setQuery(event.target.value)} /></label><div className="output"><div className="output-top"><span>Optimized request</span><span>{result.safety === "safe" ? "Narrowed safely" : "Passed through"}</span></div><pre>{result.optimizedRequest.query}</pre><div className="explain-list">{result.applied.length ? result.applied.map((item) => <div key={item.name}><b>{item.name}</b><span>{item.reason}</span></div>) : <div><b>PASS THROUGH</b><span>{result.explanation[0] ?? "No safe transformation found."}</span></div>}</div></div></div></section>
+
+    <section className="usage-proof wrap" id="usage"><div className="usage-intro"><h2>What the run costs.</h2><p>This {bench.sampleCount}-case fixture measures the request plus returned result. At the illustrative $<Number value={bench.estimatedInputCostUsd.inputPerMillion} suffix="" /> per million input tokens:</p></div><div className="usage-cards"><div className="usage-card"><span>Without CutDex</span><strong>{bench.baselineContextTokens.toLocaleString()} tokens</strong><small>${bench.estimatedInputCostUsd.baseline.toFixed(2)} input cost</small></div><div className="usage-card usage-card-after"><span>With CutDex</span><strong>{bench.cutdexContextTokens.toLocaleString()} tokens</strong><small>${bench.estimatedInputCostUsd.cutdex.toFixed(2)} input cost</small></div><div className="usage-saved"><span>Measured saving</span><strong>${bench.estimatedInputCostUsd.saved.toFixed(2)}</strong><small>{bench.estimatedContextReductionPercent}% less input context</small></div></div><p className="usage-note">This is not a Codex bill: it excludes system prompts, history, reasoning, generated output, and provider-specific tokenization. For an actual run, compare paired provider usage with <code>cutdex analyze traces.jsonl</code>.</p><div className="usage-loss"><strong>What is lost</strong><span>Only unrequested fields and rows from eligible read results. Writes, reasoning, code generation, and ambiguous calls are not compressed.</span></div></section>
+
+    <section className="billing-boundary wrap"><h2>The model stays in your Codex plan.</h2><div className="boundary-grid"><div><strong>Cutdex</strong><p>Runs locally, makes zero model requests, and does not call the OpenAI API.</p></div><div><strong>Codex</strong><p>Runs the actual task with the account and client you signed into. Verify the allowance with <code>/status</code>.</p></div><div><strong>Boundary</strong><p>Only eligible structured reads are narrowed. Reasoning and unrelated tools remain outside this path.</p></div></div></section>
+
+    <section className="connect wrap" id="connect"><h2>Connect Codex in two commands.</h2><div className="steps"><div><b>1</b><div><h3>Register the local optimizer</h3><p>No API key is required for the default path.</p><CopyCommand value="npx cutdex@latest connect codex" /></div></div><div><b>2</b><div><h3>Restart Codex and verify</h3><p>Run <code>/mcp</code> and then check the local integration.</p><CopyCommand value="cutdex doctor" /></div></div></div><div className="connection-note"><strong>Optional hosted mode</strong><p>Hosted keys are only for remote quotas. The local MCP path is the plan-safe default and makes no OpenAI API call.</p><strong>Scope</strong><p>Codex mode reduces eligible structured read payloads when Codex follows the instruction. It does not reduce reasoning or intercept built-in shell, browser, filesystem, or other MCP tools.</p></div></section>
+
+    <section className="playground wrap" id="playground"><div className="play-head"><h2>See a request shrink.</h2><p>This demo runs locally in the browser. No key or model call.</p></div><div className="play-grid"><label>Task<textarea value={task} onChange={(event) => setTask(event.target.value)} /></label><label>Original tool call<textarea value={query} onChange={(event) => setQuery(event.target.value)} /></label><div className="output"><div className="output-top"><span>Optimized request</span><span className={result.safety === "safe" ? "safe-status" : "pass-status"}>{result.safety === "safe" ? "Narrowed safely" : "Passed through"}</span></div><pre>{result.optimizedRequest.query}</pre><div className="explain-list" aria-live="polite">{result.applied.length ? result.applied.map((item) => <div key={item.name}><b>{item.name}</b><span>{item.reason}</span></div>) : <div><b>PASS THROUGH</b><span>{result.explanation[0] ?? "No safe transformation found."}</span></div>}</div></div></div></section>
     <Footer />
   </main>;
 }
 
-function Header() { return <header className="wrap site-header"><a className="brand" href="/">cutdex<span>_</span></a><nav><a href="/#usage">usage</a><a href="/#connect">connect</a><a href="/#playground">playground</a><a href="/benchmarks">benchmark</a><a href="https://github.com/TaxCollector23/siftline">github ↗</a></nav></header> }
-function Footer() { return <footer className="wrap footer"><span>© 2026 Cutdex</span><span>source-side request optimization</span><span>MIT</span></footer> }
-function TerminalArt() { return <div className="terminal-art" aria-label="CutDex CLI setup example"><div className="terminal-bar"><span>terminal</span><span>● ● ●</span></div><pre><span className="terminal-orange">╭──────────────────────────╮{`\n`}│          CutDex          │{`\n`}│  source-side optimizer   │{`\n`}╰──────────────────────────╯</span>{`\n\n`}<span className="terminal-prompt">$</span> cutdex connect codex{`\n`}<span className="terminal-orange">✓ local MCP + AGENTS.md installed</span>{`\n\n`}<span className="terminal-prompt">$</span> cutdex doctor{`\n`}<span className="terminal-orange">✓ no OpenAI API calls</span></pre></div> }
-function Benchmarks({ bench }: { bench: Bench }) { return <main><Header /><section className="bench-page wrap"><h1>Measure the part Cutdex can change.</h1><p className="hero-copy">This deterministic suite measures read-result and request-context reduction across {bench.sampleCount} tasks. It does not claim lower provider billing or more subscription usage.</p><div className="bench-table"><div><span>Tool-result token reduction</span><strong><Number value={bench.toolTokenReductionPercent} /></strong></div><div><span>Approx. tool-context reduction</span><strong><Number value={bench.estimatedContextReductionPercent} /></strong></div><div><span>Task-success delta</span><strong>{bench.taskSuccessDelta.toFixed(1)}pp</strong></div><div><span>Quality gate</span><strong>{bench.taskSuccessDelta >= -1 ? "PASS" : "FAIL"}</strong></div></div><div className="method"><h2>What the number means</h2><div><p>Baseline: {bench.baselineContextTokens.toLocaleString()} measured input-context tokens, about ${bench.estimatedInputCostUsd.baseline.toFixed(2)} at ${bench.estimatedInputCostUsd.inputPerMillion}/M. Cutdex: {bench.cutdexContextTokens.toLocaleString()} tokens, about ${bench.estimatedInputCostUsd.cutdex.toFixed(2)}. Estimated saving: ${bench.estimatedInputCostUsd.saved.toFixed(2)}.</p><p>The context figure excludes system prompts, conversation history, reasoning, generated output, and provider tokenization. Run <code>cutdex analyze traces.jsonl</code> against paired provider traces for actual usage and cost.</p><a className="primary-link" href="https://github.com/TaxCollector23/siftline/blob/main/benchmarks/results/latest.md">Open the generated report <span>↗</span></a></div></div></section><Footer /></main> }
+function CopyCommand({ value }: { value: string }) {
+  const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
+  async function copy() {
+    setState("copied");
+    try {
+      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(value);
+      else {
+        const input = document.createElement("textarea");
+        input.value = value; input.setAttribute("readonly", ""); input.style.position = "fixed"; input.style.opacity = "0";
+        document.body.appendChild(input); input.select();
+        if (!document.execCommand("copy")) throw new Error("copy unavailable");
+        input.remove();
+      }
+      window.setTimeout(() => setState("idle"), 1600);
+    } catch { setState("failed"); }
+  }
+  return <span className="copy-command"><code>{value}</code><button type="button" onClick={copy} aria-label={`Copy ${value}`}>{state === "copied" ? "Copied" : state === "failed" ? "Select manually" : "Copy"}</button></span>;
+}
+
+function Header() { return <header className="wrap site-header"><a className="brand" href="/" aria-label="Cutdex home">cutdex<span>_</span></a><nav><a href="/#usage">usage</a><a href="/#connect">connect</a><a href="/#playground">playground</a><a href="/benchmarks">benchmark</a><a href="https://github.com/TaxCollector23/siftline" rel="noreferrer">github ↗</a></nav></header>; }
+function Footer() { return <footer className="wrap footer"><span>© 2026 Cutdex</span><span>source-side request optimization</span><span>MIT</span></footer>; }
+function TerminalArt() { return <div className="terminal-art" aria-label="CutDex CLI setup example"><div className="terminal-bar"><span>terminal</span><span>● ● ●</span></div><pre><span className="terminal-orange">╭──────────────────────────╮{`\n`}│          CutDex          │{`\n`}│  source-side optimizer   │{`\n`}╰──────────────────────────╯</span>{`\n\n`}<span className="terminal-prompt">$</span> cutdex connect codex{`\n`}<span className="terminal-orange">✓ local MCP + AGENTS.md installed</span>{`\n\n`}<span className="terminal-prompt">$</span> cutdex doctor{`\n`}<span className="terminal-orange">✓ no OpenAI API calls</span></pre></div>; }
+function Benchmarks({ bench }: { bench: Bench }) { return <main><Header /><section className="bench-page wrap"><p className="eyebrow">Deterministic fixture · generated from the repo</p><h1>Measure the part Cutdex can change.</h1><p className="hero-copy">This deterministic suite measures read-result and request-context reduction across {bench.sampleCount} tasks. It does not claim lower provider billing or more subscription usage.</p><div className="bench-table"><div><span>Tool-result token reduction</span><strong><Number value={bench.toolTokenReductionPercent} /></strong></div><div><span>Approx. tool-context reduction</span><strong><Number value={bench.estimatedContextReductionPercent} /></strong></div><div><span>Task-success delta</span><strong>{bench.taskSuccessDelta.toFixed(1)}pp</strong></div><div><span>Quality gate</span><strong>{bench.taskSuccessDelta >= -1 ? "PASS" : "FAIL"}</strong></div></div><div className="method"><h2>What the number means</h2><div><p>Baseline: {bench.baselineContextTokens.toLocaleString()} measured input-context tokens, about ${bench.estimatedInputCostUsd.baseline.toFixed(2)} at ${bench.estimatedInputCostUsd.inputPerMillion}/M. Cutdex: {bench.cutdexContextTokens.toLocaleString()} tokens, about ${bench.estimatedInputCostUsd.cutdex.toFixed(2)}. Estimated saving: ${bench.estimatedInputCostUsd.saved.toFixed(2)}.</p><p>The context figure excludes system prompts, conversation history, reasoning, generated output, and provider tokenization. Run <code>cutdex analyze traces.jsonl</code> against paired provider traces for actual usage and cost.</p><a className="primary-link" href="https://github.com/TaxCollector23/siftline/blob/main/benchmarks/results/latest.md" rel="noreferrer">Open the generated report <span>↗</span></a></div></div></section><Footer /></main>; }

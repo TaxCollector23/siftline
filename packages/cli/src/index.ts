@@ -2,18 +2,24 @@ import { spawnSync } from "node:child_process";
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { homedir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { compactToolResult, compareUsage, optimizeToolCall, type OptimizeInput, type OptimizationResult, type UsageSnapshot } from "@cutdex/core";
 import { agentsPath, codexHome, codexInstalled, cutdexMcpName, cutdexMcpRegistered, hasCutdexInstructions, installCutdexInstructions, removeCutdexInstructions } from "./codex.js";
 
 const version = "0.3.2";
 const root = resolve(fileURLToPath(import.meta.url), "../../..");
-const dashboardPort = 4317;
-const proxyPort = 4318;
+const listenHost = process.env.CUTDEX_HOST?.trim() || "127.0.0.1";
+const dashboardPort = portFromEnv("CUTDEX_DASHBOARD_PORT", 4317);
+const proxyPort = portFromEnv("CUTDEX_PROXY_PORT", 4318);
 const defaultApiUrl = "https://siftline-omega.vercel.app";
 
 interface Config { apiUrl: string; apiKey?: string; keyName?: string; keyLastFour?: string }
+
+function portFromEnv(name: string, fallback: number): number {
+  const value = Number(process.env[name]);
+  return Number.isInteger(value) && value >= 1 && value <= 65_535 ? value : fallback;
+}
 
 function configPath(): string {
   return join(process.env.CUTDEX_CONFIG_DIR ?? join(homedir(), ".config", "cutdex"), "config.json");
@@ -33,8 +39,16 @@ function writeConfig(config: Config): void {
   chmodSync(path, 0o600);
 }
 
-function json(res: ServerResponse, value: unknown, status = 200): void {
-  res.writeHead(status, { "content-type": "application/json", "access-control-allow-origin": "*" }); res.end(JSON.stringify(value));
+function localCorsOrigin(req: IncomingMessage): string | undefined {
+  const origin = req.headers.origin;
+  if (typeof origin !== "string") return undefined;
+  const allowed = new Set([`http://localhost:${dashboardPort}`, `http://127.0.0.1:${dashboardPort}`]);
+  return allowed.has(origin) ? origin : undefined;
+}
+
+function json(res: ServerResponse, value: unknown, status = 200, origin?: string): void {
+  if (origin) { res.setHeader("access-control-allow-origin", origin); res.setHeader("vary", "Origin") }
+  res.writeHead(status, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "x-content-type-options": "nosniff" }); res.end(JSON.stringify(value));
 }
 
 function contentType(path: string): string {
@@ -76,24 +90,37 @@ function compactMcpResult(result: OptimizationResult): Record<string, unknown> {
 
 function proxy(): ReturnType<typeof createServer> {
   return createServer(async (req, res) => {
-    if (req.method === "GET" && req.url === "/health") return json(res, { ok: true, service: "cutdex-proxy", mode: readConfig().apiKey ? "hosted" : "local-development" });
+    const origin = localCorsOrigin(req);
+    if (req.method === "OPTIONS") { if (origin) { res.setHeader("access-control-allow-origin", origin); res.setHeader("access-control-allow-headers", "content-type"); res.setHeader("access-control-allow-methods", "GET, POST, OPTIONS"); res.setHeader("vary", "Origin") } res.writeHead(204); res.end(); return }
+    if (req.method === "GET" && req.url === "/health") return json(res, { ok: true, service: "cutdex-proxy", mode: readConfig().apiKey ? "hosted" : "local-development" }, 200, origin);
     if (req.method === "POST" && req.url === "/optimize") {
-      try { const input = JSON.parse(await body(req)) as OptimizeInput; return json(res, await optimize(input)) }
-      catch (error) { return json(res, { error: "optimization_failed", message: error instanceof Error ? error.message : "Invalid request" }, 400) }
+      try { const input = JSON.parse(await body(req)) as OptimizeInput; return json(res, await optimize(input), 200, origin) }
+      catch (error) { return json(res, { error: "optimization_failed", message: error instanceof Error ? error.message : "Invalid request" }, 400, origin) }
     }
-    return json(res, { error: "not_found" }, 404);
+    return json(res, { error: "not_found" }, 404, origin);
   });
 }
 
 function dashboard(): ReturnType<typeof createServer> {
   const dist = join(root, "apps/web/dist");
   return createServer((req, res) => {
-    if (req.url === "/api/status") return json(res, { service: "cutdex", proxy: `http://localhost:${proxyPort}`, dashboard: `http://localhost:${dashboardPort}`, hosted: Boolean(readConfig().apiKey) });
-    const file = req.url === "/" ? "/index.html" : req.url ?? "/index.html";
-    const path = join(dist, file.replace(/\.\.+/g, "").replace(/^\//, ""));
-    if (existsSync(path)) { res.writeHead(200, { "content-type": contentType(path) }); res.end(readFileSync(path)); return }
+    const pathname = (() => { try { return decodeURIComponent(new URL(req.url ?? "/", `http://${listenHost}`).pathname) } catch { return "/" } })();
+    if (pathname === "/api/status") return json(res, { service: "cutdex", host: listenHost, proxy: `http://${listenHost}:${proxyPort}`, dashboard: `http://${listenHost}:${dashboardPort}`, hosted: Boolean(readConfig().apiKey) });
+    const distRoot = resolve(dist);
+    const requested = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
+    const path = resolve(distRoot, requested);
+    if (path === distRoot || !path.startsWith(`${distRoot}${sep}`)) { res.writeHead(400, { "content-type": "text/plain; charset=utf-8", "x-content-type-options": "nosniff" }); res.end("Invalid dashboard path"); return }
+    if (existsSync(path)) { res.writeHead(200, { "content-type": contentType(path), "cache-control": "no-cache", "x-content-type-options": "nosniff" }); res.end(readFileSync(path)); return }
     if (existsSync(join(dist, "index.html"))) { res.writeHead(200, { "content-type": "text/html; charset=utf-8" }); res.end(readFileSync(join(dist, "index.html"))); return }
-    res.writeHead(200, { "content-type": "text/plain" }); res.end("Build the dashboard with pnpm --dir apps/web build, then run cutdex start.");
+    res.writeHead(200, { "content-type": "text/plain; charset=utf-8", "x-content-type-options": "nosniff" }); res.end("Build the dashboard with pnpm --dir apps/web build, then run cutdex start.");
+  });
+}
+
+function listen(server: ReturnType<typeof createServer>, port: number): Promise<void> {
+  return new Promise((resolveListen, rejectListen) => {
+    const onError = (error: Error) => { server.off("listening", onListening); rejectListen(error) };
+    const onListening = () => { server.off("error", onError); resolveListen() };
+    server.once("error", onError); server.once("listening", onListening); server.listen(port, listenHost);
   });
 }
 
@@ -165,7 +192,7 @@ function connect(agent: string | undefined): void {
   const command = `codex mcp add ${cutdexMcpName} -- ${launcher.display}`;
   if (process.env.CUTDEX_CONNECT_DRY_RUN === "1") { console.log(`${command}\nMode: ${mode}\nCODEX_HOME: ${home}\nAGENTS: ${agentsPath(home)}`); return }
   if (!codexInstalled(home)) throw new Error("Codex CLI was not found. Install Codex or put `codex` on PATH, then retry.");
-  const result = spawnSync("codex", ["mcp", "add", cutdexMcpName, "--", launcher.command, ...launcher.args], { stdio: "inherit", env: { ...process.env, CODEX_HOME: home }, windowsHide: true });
+  const result = spawnSync("codex", ["mcp", "add", cutdexMcpName, "--", launcher.command, ...launcher.args], { stdio: "inherit", env: { ...process.env, CODEX_HOME: home }, windowsHide: true, timeout: 15_000, killSignal: "SIGTERM" });
   if (result.error || result.status !== 0) { console.log(`Run this command manually:\n${command}`); throw new Error("Codex MCP registration did not complete. Check that the Codex CLI is installed and that CODEX_HOME is writable.") }
   try { installCutdexInstructions(agentsPath(home)) }
   catch (error) {
@@ -179,7 +206,7 @@ function disconnect(agent: string | undefined): void {
   if (agent !== "codex") throw new Error("Use `cutdex disconnect codex`.");
   const home = codexHome();
   if (!codexInstalled(home)) throw new Error("Codex CLI was not found. Install Codex or set CODEX_HOME to the correct installation.");
-  const result = spawnSync("codex", ["mcp", "remove", cutdexMcpName], { stdio: "ignore", env: { ...process.env, CODEX_HOME: home }, windowsHide: true });
+  const result = spawnSync("codex", ["mcp", "remove", cutdexMcpName], { stdio: "ignore", env: { ...process.env, CODEX_HOME: home }, windowsHide: true, timeout: 15_000, killSignal: "SIGTERM" });
   const instructionResult = removeCutdexInstructions(agentsPath(home));
   if (result.error) throw new Error(`Could not unregister Cutdex from Codex: ${result.error.message}`);
   console.log(`✓ MCP server ${result.status === 0 ? "unregistered" : "already absent"}\n✓ Cutdex instructions ${instructionResult.present ? "removed" : "already absent"}\n\nCutdex is disconnected from Codex.`);
@@ -338,8 +365,10 @@ async function main(): Promise<void> {
   if (command === "compact") { const target = process.argv[3]; if (!target) throw new Error("Provide a JSON result path."); compact(target); return }
   if (command === "optimize" || command === "explain") { const target = process.argv[3]; if (!target) throw new Error("Provide a trace JSON path."); const trace = JSON.parse(readFileSync(resolve(target), "utf8")) as OptimizeInput; console.log(JSON.stringify(await optimize(trace), null, 2)); return }
   if (command !== "start") { help(); return }
-  const proxyServer = proxy().listen(proxyPort); const dashboardServer = dashboard().listen(dashboardPort);
-  console.log(`Proxy      http://localhost:${proxyPort}\nDashboard  http://localhost:${dashboardPort}\nMode       ${readConfig().apiKey ? "hosted" : "local"}\nBilling    optimizer makes no OpenAI API calls\n\nWaiting for agent traffic...`);
+  const proxyServer = proxy(); const dashboardServer = dashboard();
+  try { await Promise.all([listen(proxyServer, proxyPort), listen(dashboardServer, dashboardPort)]) }
+  catch (error) { proxyServer.close(); dashboardServer.close(); throw new Error(`Could not start Cutdex on ${listenHost}:${proxyPort}/${dashboardPort}: ${error instanceof Error ? error.message : "port unavailable"}`) }
+  console.log(`Proxy      http://${listenHost}:${proxyPort}\nDashboard  http://${listenHost}:${dashboardPort}\nMode       ${readConfig().apiKey ? "hosted" : "local"}\nBilling    optimizer makes no OpenAI API calls\n\nWaiting for agent traffic...`);
   const close = () => { proxyServer.close(); dashboardServer.close(); process.exit(0) };
   process.on("SIGINT", close); process.on("SIGTERM", close);
 }

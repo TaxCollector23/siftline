@@ -105,15 +105,30 @@ async function firebaseCertificates(): Promise<Record<string, string>> {
 }
 
 export async function verifyFirebaseIdToken(token: string): Promise<{ uid: string; email?: string }> {
-  const [headerPart, payloadPart, signaturePart] = token.split(".");
-  if (!headerPart || !payloadPart || !signaturePart) throw Object.assign(new Error("Invalid identity token"), { statusCode: 401 });
-  const header = JSON.parse(Buffer.from(headerPart, "base64url").toString("utf8")) as { alg?: string; kid?: string };
-  const payload = JSON.parse(Buffer.from(payloadPart, "base64url").toString("utf8")) as { sub?: string; aud?: string; iss?: string; exp?: number; email?: string };
-  const cert = header.kid ? (await firebaseCertificates())[header.kid] : undefined;
+  const invalid = (): never => { throw Object.assign(new Error("Invalid identity token"), { statusCode: 401 }) };
+  const parts = token.split(".");
+  if (parts.length !== 3 || parts.some((part) => !part)) invalid();
+  const [headerPart, payloadPart, signaturePart] = parts as [string, string, string];
+  let header: { alg?: string; kid?: string };
+  let payload: { sub?: string; aud?: string; iss?: string; exp?: number; email?: string };
+  try {
+    header = JSON.parse(Buffer.from(headerPart, "base64url").toString("utf8")) as { alg?: string; kid?: string };
+    payload = JSON.parse(Buffer.from(payloadPart, "base64url").toString("utf8")) as { sub?: string; aud?: string; iss?: string; exp?: number; email?: string };
+  } catch {
+    return invalid();
+  }
+  if (header.alg !== "RS256") invalid();
+  if (typeof header.kid !== "string") invalid();
+  if (typeof payload.sub !== "string" || !payload.sub) invalid();
+  if (typeof payload.exp !== "number") invalid();
+  const kid = header.kid as string;
+  const uid = payload.sub as string;
+  const expiresAt = payload.exp as number;
+  const cert = (await firebaseCertificates())[kid];
   const verifier = createVerify("RSA-SHA256"); verifier.update(`${headerPart}.${payloadPart}`); verifier.end();
-  const valid = header.alg === "RS256" && cert && verifier.verify(cert, Buffer.from(signaturePart, "base64url"));
-  if (!valid || !payload.sub || payload.aud !== projectId() || payload.iss !== `https://securetoken.google.com/${projectId()}` || (payload.exp ?? 0) * 1000 < Date.now()) throw Object.assign(new Error("Invalid identity token"), { statusCode: 401 });
-  return { uid: payload.sub, email: payload.email };
+  const valid = Boolean(cert && verifier.verify(cert, Buffer.from(signaturePart, "base64url")));
+  if (!valid || payload.aud !== projectId() || payload.iss !== `https://securetoken.google.com/${projectId()}` || expiresAt * 1000 <= Date.now()) invalid();
+  return { uid, email: payload.email };
 }
 
 export async function listUserKeys(userId: string): Promise<KeyRecord[]> {

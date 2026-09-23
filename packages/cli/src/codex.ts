@@ -58,7 +58,7 @@ export function removeCutdexInstructions(filePath = agentsPath()): { changed: bo
 }
 
 export function runCodex(args: string[], home = codexHome()): SpawnSyncReturns<string> {
-  return spawnSync("codex", args, { encoding: "utf8", env: { ...process.env, CODEX_HOME: home }, windowsHide: true }) as SpawnSyncReturns<string>;
+  return spawnSync("codex", args, { encoding: "utf8", env: { ...process.env, CODEX_HOME: home }, windowsHide: true, timeout: 3_000, killSignal: "SIGTERM" }) as SpawnSyncReturns<string>;
 }
 
 export function codexInstalled(home = codexHome()): boolean { return runCodex(["--version"], home).status === 0 }
