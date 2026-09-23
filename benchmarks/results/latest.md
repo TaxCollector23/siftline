@@ -12,7 +12,7 @@ Generated from 120 deterministic treatment cases across sql, sql-aggregate, sql-
 | Task success | 115/120 | 115/120 | **0pp** |
 | Requests modified | — | 70 | — |
 | Safely unchanged | — | 50 | — |
-| Median optimization latency | — | 0.008 ms | — |
+| Median optimization latency | — | 0.01 ms | — |
 
 ## Method
 

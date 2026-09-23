@@ -5,3 +5,6 @@ allowBuilds:
   '@firebase/util': true
   esbuild: true
   protobufjs: true
+overrides:
+  'tsup>esbuild': 0.28.2
+  'bundle-require>esbuild': 0.28.2
