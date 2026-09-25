@@ -109,13 +109,14 @@ function sum(rows: ReturnType<typeof caseResult>[], key: "baselineBytes" | "cutd
 function median(values: number[]): number { const sorted = [...values].sort((a, b) => a - b); return sorted[Math.floor(sorted.length / 2)] ?? 0 }
 
 const officialPricingSource = "https://developers.openai.com/api/docs/pricing";
+const officialSubscriptionPricingSource = "https://learn.chatgpt.com/docs/pricing";
 const officialPricingVerifiedOn = "2026-09-25";
 const officialApiModels = [
-  { model: "gpt-6-astra", label: "GPT-6 Astra", inputPerMillion: 10, cachedInputPerMillion: 1, outputPerMillion: 50 },
-  { model: "gpt-6-sol", label: "GPT-6 Sol", inputPerMillion: 2, cachedInputPerMillion: 0.2, outputPerMillion: 10 },
-  { model: "gpt-6-luna", label: "GPT-6 Luna", inputPerMillion: 0.1, cachedInputPerMillion: 0.01, outputPerMillion: 0.5 },
-  { model: "gpt-5.6-sol", label: "GPT-5.6 Sol", inputPerMillion: 4, cachedInputPerMillion: 0.4, outputPerMillion: 20 },
-  { model: "gpt-5.3-codex", label: "GPT-5.3 Codex", inputPerMillion: 3.5, cachedInputPerMillion: 0.35, outputPerMillion: 28 },
+  { model: "gpt-6-astra", label: "GPT-6 Astra", inputPerMillion: 10, cachedInputPerMillion: 1, outputPerMillion: 50, planInputCreditsPerMillion: 250, plusMessagesPerFiveHours: "5–45", pro5xMessagesPerFiveHours: "25–225", pro20xMessagesPerFiveHours: "100–900" },
+  { model: "gpt-6-sol", label: "GPT-6 Sol", inputPerMillion: 2, cachedInputPerMillion: 0.2, outputPerMillion: 10, planInputCreditsPerMillion: 50, plusMessagesPerFiveHours: "15–150", pro5xMessagesPerFiveHours: "70–700", pro20xMessagesPerFiveHours: "300–3,000" },
+  { model: "gpt-6-luna", label: "GPT-6 Luna", inputPerMillion: 0.1, cachedInputPerMillion: 0.01, outputPerMillion: 0.5, planInputCreditsPerMillion: 2.5, plusMessagesPerFiveHours: "350–3,000", pro5xMessagesPerFiveHours: "1,750–14,000", pro20xMessagesPerFiveHours: "7,000–56,000" },
+  { model: "gpt-5.6-sol", label: "GPT-5.6 Sol", inputPerMillion: 4, cachedInputPerMillion: 0.4, outputPerMillion: 20, planInputCreditsPerMillion: 100, plusMessagesPerFiveHours: "10–100", pro5xMessagesPerFiveHours: "50–500", pro20xMessagesPerFiveHours: "200–2,000" },
+  { model: "gpt-5.3-codex", label: "GPT-5.3 Codex", inputPerMillion: 3.5, cachedInputPerMillion: 0.35, outputPerMillion: 28, planInputCreditsPerMillion: null, plusMessagesPerFiveHours: null, pro5xMessagesPerFiveHours: null, pro20xMessagesPerFiveHours: null },
 ] as const;
 
 async function main(): Promise<void> {
@@ -149,6 +150,9 @@ async function main(): Promise<void> {
       cutdexInputCostUsd: Number(cutdex.toFixed(2)),
       savedInputCostUsd: Number((baseline - cutdex).toFixed(2)),
       inputCostReductionPercent: contextReductionPercent,
+      baselinePlanInputCredits: model.planInputCreditsPerMillion === null ? null : Number((baselineContextTokens / 1_000_000 * model.planInputCreditsPerMillion).toFixed(2)),
+      cutdexPlanInputCredits: model.planInputCreditsPerMillion === null ? null : Number((cutdexContextTokens / 1_000_000 * model.planInputCreditsPerMillion).toFixed(2)),
+      savedPlanInputCredits: model.planInputCreditsPerMillion === null ? null : Number(((baselineContextTokens - cutdexContextTokens) / 1_000_000 * model.planInputCreditsPerMillion).toFixed(2)),
     };
   });
   const baselinePassed = cases.filter((row) => row.baselineTaskSuccess).length;
@@ -169,8 +173,9 @@ async function main(): Promise<void> {
     apiBillingComparison,
     officialPricing: {
       sourceUrl: officialPricingSource,
+      subscriptionSourceUrl: officialSubscriptionPricingSource,
       verifiedOn: officialPricingVerifiedOn,
-      scope: "Standard short-context API rates; input-only scenario with output and tool-call charges excluded.",
+      scope: "Standard short-context API rates and standard-speed subscription input-credit rates where published; output, cache-hit, tool-call, and allowance conversion are excluded.",
       models: officialApiComparisons,
     },
     subscriptionUsageReductionPercent: null,
@@ -201,13 +206,15 @@ Generated from ${result.sampleCount} deterministic treatment cases across ${resu
 | Safely unchanged | — | ${result.correctlyUnchanged} | — |
 | Median optimization latency | — | ${result.medianOptimizationLatencyMs} ms | — |
 
-## Official API rate sensitivity
+## Official API and subscription-credit sensitivity
 
-Rates below were manually verified on ${officialPricingVerifiedOn} from [OpenAI's API pricing page](${officialPricingSource}). They show input-only spend for this fixture at each model's standard short-context rate; output, cache hits, tool-call fees, and subscription allowances are excluded.
+Rates below were manually verified on ${officialPricingVerifiedOn} from [OpenAI's API pricing page](${officialPricingSource}) and [ChatGPT pricing guidance](${officialSubscriptionPricingSource}). API dollars use each model's standard short-context rate. Subscription columns use published standard-speed input credits where available. Both are input-only scenarios; output, cache hits, tool-call fees, and actual plan allowance/message conversion are excluded.
 
-| Model | Input / 1M | Baseline | Cutdex | Modeled input saved |
-| --- | ---: | ---: | ---: | ---: |
-${officialApiComparisons.map((model) => `| ${model.label} | $${model.inputPerMillion} | $${model.baselineInputCostUsd.toFixed(2)} | $${model.cutdexInputCostUsd.toFixed(2)} | **$${model.savedInputCostUsd.toFixed(2)}** |`).join("\n")}
+| Model | API input / 1M | API before | API with Cutdex | API input saved | Plan input credits / 1M | Plan credits saved |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+${officialApiComparisons.map((model) => `| ${model.label} | $${model.inputPerMillion} | $${model.baselineInputCostUsd.toFixed(2)} | $${model.cutdexInputCostUsd.toFixed(2)} | **$${model.savedInputCostUsd.toFixed(2)}** | ${model.planInputCreditsPerMillion === null ? "Not published" : model.planInputCreditsPerMillion} | ${model.savedPlanInputCredits === null ? "Not published" : `**${model.savedPlanInputCredits}**`} |`).join("\n")}
+
+Published Plus message ranges are not substituted for a usage percentage: Astra ${officialApiModels[0].plusMessagesPerFiveHours}, Sol ${officialApiModels[1].plusMessagesPerFiveHours}, Luna ${officialApiModels[2].plusMessagesPerFiveHours}, and GPT-5.6 Sol ${officialApiModels[3].plusMessagesPerFiveHours} messages per five hours. OpenAI labels these as estimates, not fixed limits; actual usage depends on model, context, reasoning, tools, retrieval, and caching.
 
 ## Method
 
@@ -217,7 +224,7 @@ Task success is a fixture correctness gate: baseline cases are known-good, and t
 
 ## Billing boundary
 
-The API-style estimate is calculated as \`${baselineContextTokens.toLocaleString()} / 1,000,000 × $3 = $${result.estimatedInputCostUsd.baseline.toFixed(2)}\` before Cutdex and \`${cutdexContextTokens.toLocaleString()} / 1,000,000 × $3 = $${result.estimatedInputCostUsd.cutdex.toFixed(2)}\` after Cutdex. The modeled difference is **$${result.estimatedInputCostUsd.saved.toFixed(2)} (${result.estimatedContextReductionPercent}%)**, using an illustrative input-only rate. The official model table above changes the dollar estimate without changing the measured token reduction. ChatGPT-authenticated Codex uses a plan allowance rather than this API price; subscription usage is intentionally **not measured** here.
+The API-style estimate is calculated as \`${baselineContextTokens.toLocaleString()} / 1,000,000 × $3 = $${result.estimatedInputCostUsd.baseline.toFixed(2)}\` before Cutdex and \`${cutdexContextTokens.toLocaleString()} / 1,000,000 × $3 = $${result.estimatedInputCostUsd.cutdex.toFixed(2)}\` after Cutdex. The modeled difference is **$${result.estimatedInputCostUsd.saved.toFixed(2)} (${result.estimatedContextReductionPercent}%)**, using an illustrative input-only rate. The official model table changes the API-dollar and plan-credit scenarios without changing the measured token reduction. ChatGPT-authenticated Codex uses a plan allowance rather than this API price; actual subscription usage remains unmeasured.
 
 ## Quality gate
 
