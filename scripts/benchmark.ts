@@ -120,6 +120,15 @@ async function main(): Promise<void> {
   const cutdexRequestTokens = sum(cases, "cutdexApproximateRequestTokens");
   const baselineInputCostUsd = costForTokens(baselineContextTokens, 0);
   const cutdexInputCostUsd = costForTokens(cutdexContextTokens, 0);
+  const contextReductionPercent = Number(((1 - cutdexContextTokens / baselineContextTokens) * 100).toFixed(1));
+  const apiBillingComparison = {
+    inputPerMillion: 3,
+    baseline: Number(baselineInputCostUsd.toFixed(2)),
+    cutdex: Number(cutdexInputCostUsd.toFixed(2)),
+    saved: Number((baselineInputCostUsd - cutdexInputCostUsd).toFixed(2)),
+    reductionPercent: contextReductionPercent,
+    note: "Illustrative input-only estimate; actual API cost depends on model, cache treatment, output tokens, and current provider pricing.",
+  };
   const baselinePassed = cases.filter((row) => row.baselineTaskSuccess).length;
   const cutdexPassed = cases.filter((row) => row.cutdexTaskSuccess).length;
   const result = {
@@ -130,11 +139,13 @@ async function main(): Promise<void> {
     sampleCount: cases.length,
     categories: [...new Set(cases.map((row) => row.category))],
     toolTokenReductionPercent: Number(((1 - cutdexTokens / baselineTokens) * 100).toFixed(1)),
-    estimatedContextReductionPercent: Number(((1 - cutdexContextTokens / baselineContextTokens) * 100).toFixed(1)),
+    estimatedContextReductionPercent: contextReductionPercent,
     estimatedRequestTokenDeltaPercent: Number(((cutdexRequestTokens / baselineRequestTokens - 1) * 100).toFixed(1)),
     baselineContextTokens,
     cutdexContextTokens,
-    estimatedInputCostUsd: { baseline: Number(baselineInputCostUsd.toFixed(2)), cutdex: Number(cutdexInputCostUsd.toFixed(2)), saved: Number((baselineInputCostUsd - cutdexInputCostUsd).toFixed(2)), inputPerMillion: 3 },
+    estimatedInputCostUsd: { baseline: apiBillingComparison.baseline, cutdex: apiBillingComparison.cutdex, saved: apiBillingComparison.saved, inputPerMillion: apiBillingComparison.inputPerMillion },
+    apiBillingComparison,
+    subscriptionUsageReductionPercent: null,
     dataReductionPercent: Number(((1 - cutdexBytes / baselineBytes) * 100).toFixed(1)),
     baselinePassed,
     optimizedPassed: cutdexPassed,
@@ -155,7 +166,7 @@ Generated from ${result.sampleCount} deterministic treatment cases across ${resu
 | Approximate tool-result tokens | ${baselineTokens.toLocaleString()} | ${cutdexTokens.toLocaleString()} | **-${result.toolTokenReductionPercent}%** |
 | Approximate request + result context | ${baselineContextTokens.toLocaleString()} | ${cutdexContextTokens.toLocaleString()} | **-${result.estimatedContextReductionPercent}%** |
 | Approximate request tokens only | ${baselineRequestTokens.toLocaleString()} | ${cutdexRequestTokens.toLocaleString()} | **${result.estimatedRequestTokenDeltaPercent > 0 ? "+" : ""}${result.estimatedRequestTokenDeltaPercent}%** |
-| Estimated input cost at $3/M | $${result.estimatedInputCostUsd.baseline.toFixed(2)} | $${result.estimatedInputCostUsd.cutdex.toFixed(2)} | **-$${result.estimatedInputCostUsd.saved.toFixed(2)}** |
+| API-style input estimate at illustrative $3/M | $${result.estimatedInputCostUsd.baseline.toFixed(2)} | $${result.estimatedInputCostUsd.cutdex.toFixed(2)} | **-$${result.estimatedInputCostUsd.saved.toFixed(2)}** |
 | Returned fixture bytes | ${baselineBytes.toLocaleString()} | ${cutdexBytes.toLocaleString()} | **-${result.dataReductionPercent}%** |
 | Task success | ${result.baselinePassed}/${result.sampleCount} | ${result.optimizedPassed}/${result.sampleCount} | **${result.taskSuccessDelta}pp** |
 | Requests modified | — | ${result.callsOptimized} | — |
@@ -168,6 +179,10 @@ The dataset covers broad SQL projections, implied predicates, sort and limit req
 
 Task success is a fixture correctness gate: baseline cases are known-good, and treatment must preserve fields explicitly requested by the task. Context estimates use ceil(UTF-8 JSON bytes / 4), not provider billing. The context figure includes only the task/tool/request envelope and returned fixture result; it excludes system prompts, conversation history, model reasoning, generated output, and provider tokenization. The benchmark does not claim lower provider charges, more subscription usage, or performance against a real database/API.
 
+## Billing boundary
+
+The API-style estimate is calculated as \`${baselineContextTokens.toLocaleString()} / 1,000,000 × $3 = $${result.estimatedInputCostUsd.baseline.toFixed(2)}\` before Cutdex and \`${cutdexContextTokens.toLocaleString()} / 1,000,000 × $3 = $${result.estimatedInputCostUsd.cutdex.toFixed(2)}\` after Cutdex. The modeled difference is **$${result.estimatedInputCostUsd.saved.toFixed(2)} (${result.estimatedContextReductionPercent}%)**, using an illustrative input-only rate. ChatGPT-authenticated Codex uses a plan allowance rather than this API price; subscription usage is intentionally **not measured** here.
+
 ## Quality gate
 
 ${result.taskSuccessDelta >= -1 ? "PASS" : "FAIL"}: publishable runs require treatment task success to remain within 1.0 percentage point of baseline.
@@ -177,7 +192,7 @@ ${result.taskSuccessDelta >= -1 ? "PASS" : "FAIL"}: publishable runs require tre
   await writeFile(resolve("benchmarks/results/latest.md"), markdown);
   await mkdir(resolve("apps/web/public"), { recursive: true });
   await copyFile(resolve("benchmarks/results/latest.json"), resolve("apps/web/public/latest.json"));
-  console.log(`Cutdex deterministic benchmark\nCases ${result.sampleCount}\nApproximate tool-result token reduction ${result.toolTokenReductionPercent}%\nApproximate request + result context reduction ${result.estimatedContextReductionPercent}%\nEstimated input cost at $3/M $${result.estimatedInputCostUsd.baseline.toFixed(2)} → $${result.estimatedInputCostUsd.cutdex.toFixed(2)}\nTask success delta ${result.taskSuccessDelta}pp\nMedian optimization latency ${result.medianOptimizationLatencyMs} ms\nQuality gate ${result.taskSuccessDelta >= -1 ? "PASS" : "FAIL"}`);
+  console.log(`Cutdex deterministic benchmark\nCases ${result.sampleCount}\nApproximate tool-result token reduction ${result.toolTokenReductionPercent}%\nApproximate request + result context reduction ${result.estimatedContextReductionPercent}%\nAPI-style input estimate at illustrative $3/M $${result.estimatedInputCostUsd.baseline.toFixed(2)} → $${result.estimatedInputCostUsd.cutdex.toFixed(2)}\nTask success delta ${result.taskSuccessDelta}pp\nMedian optimization latency ${result.medianOptimizationLatencyMs} ms\nQuality gate ${result.taskSuccessDelta >= -1 ? "PASS" : "FAIL"}`);
 }
 
 main().catch((error) => { console.error(error); process.exit(1) });

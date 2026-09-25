@@ -29,6 +29,8 @@ Run `pnpm benchmark` to regenerate [`benchmarks/results/latest.json`](benchmarks
 
 The deterministic run uses 120 synthetic tasks and reports fixture bytes, approximate request-plus-result context, task-success delta, optimization latency, per-case requests, optimized calls, and unchanged controls. The current 81.8% tool-result and 81.7% request-plus-result context figures are local fixture measurements—not provider billing—and do not promise more ChatGPT/Codex subscription usage. The GraphQL fixture now checks that a rewrite preserves the nested response shape; unsupported nesting passes through.
 
+The billing boundary is explicit: an API-style estimate at the illustrative $3/M input rate is $16.15 before Cutdex and $2.95 after it for this fixture, a modeled $13.20 difference. ChatGPT-signed-in Codex uses the account's Work/Codex allowance rather than API-token billing, so the repository does not claim an 81.7% subscription-usage reduction. To measure a real API run, record paired provider-reported usage and run `cutdex analyze traces.jsonl`.
+
 The public npm package is installable without npm authentication. Run `npx cutdex@latest connect codex` for local mode or install it globally with `npm install --global cutdex`. Hosted quota mode is optional: `cutdex login` opens the key page, then verifies the key you paste back into the terminal. The repository includes a tag-based GitHub Actions release using npm trusted publishing, so the maintainer does not need a local npm token after configuring the package's Trusted Publisher as `TaxCollector23/siftline`, workflow `publish.yml`.
 
 To release a version after that one-time npm setup:
