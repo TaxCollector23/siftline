@@ -108,6 +108,16 @@ function caseResult(definition: Definition) {
 function sum(rows: ReturnType<typeof caseResult>[], key: "baselineBytes" | "cutdexBytes" | "baselineApproximateToolResultTokens" | "cutdexApproximateToolResultTokens" | "baselineApproximateToolContextTokens" | "cutdexApproximateToolContextTokens" | "baselineApproximateRequestTokens" | "cutdexApproximateRequestTokens"): number { return rows.reduce((total, row) => total + row[key], 0) }
 function median(values: number[]): number { const sorted = [...values].sort((a, b) => a - b); return sorted[Math.floor(sorted.length / 2)] ?? 0 }
 
+const officialPricingSource = "https://developers.openai.com/api/docs/pricing";
+const officialPricingVerifiedOn = "2026-09-25";
+const officialApiModels = [
+  { model: "gpt-6-astra", label: "GPT-6 Astra", inputPerMillion: 10, cachedInputPerMillion: 1, outputPerMillion: 50 },
+  { model: "gpt-6-sol", label: "GPT-6 Sol", inputPerMillion: 2, cachedInputPerMillion: 0.2, outputPerMillion: 10 },
+  { model: "gpt-6-luna", label: "GPT-6 Luna", inputPerMillion: 0.1, cachedInputPerMillion: 0.01, outputPerMillion: 0.5 },
+  { model: "gpt-5.6-sol", label: "GPT-5.6 Sol", inputPerMillion: 4, cachedInputPerMillion: 0.4, outputPerMillion: 20 },
+  { model: "gpt-5.3-codex", label: "GPT-5.3 Codex", inputPerMillion: 3.5, cachedInputPerMillion: 0.35, outputPerMillion: 28 },
+] as const;
+
 async function main(): Promise<void> {
   const cases = repeatedCases().map(caseResult);
   const baselineTokens = sum(cases, "baselineApproximateToolResultTokens");
@@ -129,6 +139,18 @@ async function main(): Promise<void> {
     reductionPercent: contextReductionPercent,
     note: "Illustrative input-only estimate; actual API cost depends on model, cache treatment, output tokens, and current provider pricing.",
   };
+  const officialApiComparisons = officialApiModels.map((model) => {
+    const pricing = { model: model.model, inputPerMillion: model.inputPerMillion, cachedInputPerMillion: model.cachedInputPerMillion, outputPerMillion: model.outputPerMillion };
+    const baseline = costForTokens(baselineContextTokens, 0, pricing);
+    const cutdex = costForTokens(cutdexContextTokens, 0, pricing);
+    return {
+      ...model,
+      baselineInputCostUsd: Number(baseline.toFixed(2)),
+      cutdexInputCostUsd: Number(cutdex.toFixed(2)),
+      savedInputCostUsd: Number((baseline - cutdex).toFixed(2)),
+      inputCostReductionPercent: contextReductionPercent,
+    };
+  });
   const baselinePassed = cases.filter((row) => row.baselineTaskSuccess).length;
   const cutdexPassed = cases.filter((row) => row.cutdexTaskSuccess).length;
   const result = {
@@ -145,6 +167,12 @@ async function main(): Promise<void> {
     cutdexContextTokens,
     estimatedInputCostUsd: { baseline: apiBillingComparison.baseline, cutdex: apiBillingComparison.cutdex, saved: apiBillingComparison.saved, inputPerMillion: apiBillingComparison.inputPerMillion },
     apiBillingComparison,
+    officialPricing: {
+      sourceUrl: officialPricingSource,
+      verifiedOn: officialPricingVerifiedOn,
+      scope: "Standard short-context API rates; input-only scenario with output and tool-call charges excluded.",
+      models: officialApiComparisons,
+    },
     subscriptionUsageReductionPercent: null,
     dataReductionPercent: Number(((1 - cutdexBytes / baselineBytes) * 100).toFixed(1)),
     baselinePassed,
@@ -173,6 +201,14 @@ Generated from ${result.sampleCount} deterministic treatment cases across ${resu
 | Safely unchanged | — | ${result.correctlyUnchanged} | — |
 | Median optimization latency | — | ${result.medianOptimizationLatencyMs} ms | — |
 
+## Official API rate sensitivity
+
+Rates below were manually verified on ${officialPricingVerifiedOn} from [OpenAI's API pricing page](${officialPricingSource}). They show input-only spend for this fixture at each model's standard short-context rate; output, cache hits, tool-call fees, and subscription allowances are excluded.
+
+| Model | Input / 1M | Baseline | Cutdex | Modeled input saved |
+| --- | ---: | ---: | ---: | ---: |
+${officialApiComparisons.map((model) => `| ${model.label} | $${model.inputPerMillion} | $${model.baselineInputCostUsd.toFixed(2)} | $${model.cutdexInputCostUsd.toFixed(2)} | **$${model.savedInputCostUsd.toFixed(2)}** |`).join("\n")}
+
 ## Method
 
 The dataset covers broad SQL projections, implied predicates, sort and limit requests, aggregates, joins and unions that must pass through, GraphQL over-fetching, structured API-shaped reads, write operations, explicit all-field controls, and already-efficient requests. Each case records the task, original and optimized request, deterministic fixture bytes, approximate request and tool-result tokens, measured local optimization latency, task-success flags, modification state, safety, and reason.
@@ -181,7 +217,7 @@ Task success is a fixture correctness gate: baseline cases are known-good, and t
 
 ## Billing boundary
 
-The API-style estimate is calculated as \`${baselineContextTokens.toLocaleString()} / 1,000,000 × $3 = $${result.estimatedInputCostUsd.baseline.toFixed(2)}\` before Cutdex and \`${cutdexContextTokens.toLocaleString()} / 1,000,000 × $3 = $${result.estimatedInputCostUsd.cutdex.toFixed(2)}\` after Cutdex. The modeled difference is **$${result.estimatedInputCostUsd.saved.toFixed(2)} (${result.estimatedContextReductionPercent}%)**, using an illustrative input-only rate. ChatGPT-authenticated Codex uses a plan allowance rather than this API price; subscription usage is intentionally **not measured** here.
+The API-style estimate is calculated as \`${baselineContextTokens.toLocaleString()} / 1,000,000 × $3 = $${result.estimatedInputCostUsd.baseline.toFixed(2)}\` before Cutdex and \`${cutdexContextTokens.toLocaleString()} / 1,000,000 × $3 = $${result.estimatedInputCostUsd.cutdex.toFixed(2)}\` after Cutdex. The modeled difference is **$${result.estimatedInputCostUsd.saved.toFixed(2)} (${result.estimatedContextReductionPercent}%)**, using an illustrative input-only rate. The official model table above changes the dollar estimate without changing the measured token reduction. ChatGPT-authenticated Codex uses a plan allowance rather than this API price; subscription usage is intentionally **not measured** here.
 
 ## Quality gate
 

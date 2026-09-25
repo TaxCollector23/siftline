@@ -31,6 +31,8 @@ The deterministic run uses 120 synthetic tasks and reports fixture bytes, approx
 
 The billing boundary is explicit: an API-style estimate at the illustrative $3/M input rate is $16.15 before Cutdex and $2.95 after it for this fixture, a modeled $13.20 difference. ChatGPT-signed-in Codex uses the account's Work/Codex allowance rather than API-token billing, so the repository does not claim an 81.7% subscription-usage reduction. To measure a real API run, record paired provider-reported usage and run `cutdex analyze traces.jsonl`.
 
+The generated report and landing page also include an official API-rate sensitivity table for GPT-6 Astra, GPT-6 Sol, GPT-6 Luna, GPT-5.6 Sol, and GPT-5.3 Codex. It applies the published standard short-context input rates to the same fixture, with output, cache-hit, tool-call, and subscription charges excluded. Rates are manually verified against [OpenAI's API pricing page](https://developers.openai.com/api/docs/pricing) and should be re-checked before invoicing or publishing a new claim.
+
 The public npm package is installable without npm authentication. Run `npx cutdex@latest connect codex` for local mode or install it globally with `npm install --global cutdex`. Hosted quota mode is optional: `cutdex login` opens the key page, then verifies the key you paste back into the terminal. The repository includes a tag-based GitHub Actions release using npm trusted publishing, so the maintainer does not need a local npm token after configuring the package's Trusted Publisher as `TaxCollector23/siftline`, workflow `publish.yml`.
 
 To release a version after that one-time npm setup:
@@ -81,6 +83,8 @@ cutdex doctor
 ```
 
 `cutdex connect codex` registers the MCP server and idempotently adds a marked Cutdex block to the global `AGENTS.md` under `CODEX_HOME` (or `~/.codex`). `cutdex disconnect codex` removes only that block and unregisters only the Cutdex MCP server.
+
+`cutdex bench` runs a four-case local smoke test for safe reads, writes, unsupported shapes, and already-narrow requests. It never calls a provider and reports no billing or subscription savings.
 
 ```ts
 import { optimizeToolCall } from "@cutdex/core";

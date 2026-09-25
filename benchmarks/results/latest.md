@@ -14,6 +14,18 @@ Generated from 120 deterministic treatment cases across sql, sql-aggregate, sql-
 | Safely unchanged | — | 50 | — |
 | Median optimization latency | — | 0.009 ms | — |
 
+## Official API rate sensitivity
+
+Rates below were manually verified on 2026-09-25 from [OpenAI's API pricing page](https://developers.openai.com/api/docs/pricing). They show input-only spend for this fixture at each model's standard short-context rate; output, cache hits, tool-call fees, and subscription allowances are excluded.
+
+| Model | Input / 1M | Baseline | Cutdex | Modeled input saved |
+| --- | ---: | ---: | ---: | ---: |
+| GPT-6 Astra | $10 | $53.83 | $9.84 | **$43.99** |
+| GPT-6 Sol | $2 | $10.77 | $1.97 | **$8.80** |
+| GPT-6 Luna | $0.1 | $0.54 | $0.10 | **$0.44** |
+| GPT-5.6 Sol | $4 | $21.53 | $3.94 | **$17.60** |
+| GPT-5.3 Codex | $3.5 | $18.84 | $3.44 | **$15.40** |
+
 ## Method
 
 The dataset covers broad SQL projections, implied predicates, sort and limit requests, aggregates, joins and unions that must pass through, GraphQL over-fetching, structured API-shaped reads, write operations, explicit all-field controls, and already-efficient requests. Each case records the task, original and optimized request, deterministic fixture bytes, approximate request and tool-result tokens, measured local optimization latency, task-success flags, modification state, safety, and reason.
@@ -22,7 +34,7 @@ Task success is a fixture correctness gate: baseline cases are known-good, and t
 
 ## Billing boundary
 
-The API-style estimate is calculated as `5,383,330 / 1,000,000 × $3 = $16.15` before Cutdex and `984,190 / 1,000,000 × $3 = $2.95` after Cutdex. The modeled difference is **$13.20 (81.7%)**, using an illustrative input-only rate. ChatGPT-authenticated Codex uses a plan allowance rather than this API price; subscription usage is intentionally **not measured** here.
+The API-style estimate is calculated as `5,383,330 / 1,000,000 × $3 = $16.15` before Cutdex and `984,190 / 1,000,000 × $3 = $2.95` after Cutdex. The modeled difference is **$13.20 (81.7%)**, using an illustrative input-only rate. The official model table above changes the dollar estimate without changing the measured token reduction. ChatGPT-authenticated Codex uses a plan allowance rather than this API price; subscription usage is intentionally **not measured** here.
 
 ## Quality gate
 

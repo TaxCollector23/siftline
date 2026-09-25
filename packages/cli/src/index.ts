@@ -3,6 +3,7 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "n
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { homedir } from "node:os";
 import { dirname, join, resolve, sep } from "node:path";
+import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 import { compactToolResult, compareUsage, optimizeToolCall, type OptimizeInput, type OptimizationResult, type UsageSnapshot } from "@cutdex/core";
 import { agentsPath, codexHome, codexInstalled, cutdexMcpName, cutdexMcpRegistered, hasCutdexInstructions, installCutdexInstructions, removeCutdexInstructions } from "./codex.js";
@@ -276,12 +277,27 @@ function startupArt(): string {
 }
 
 function help(): void {
-  console.log("Essential commands:\n  cutdex login           Open the key page and save your API key\n  cutdex connect codex   Register the Codex integration\n  cutdex status          Check authentication and quota\n  cutdex doctor          Check the local integration\n  cutdex logout          Remove the local credential");
+  console.log("Essential commands:\n  cutdex login           Open the key page and save your API key\n  cutdex connect codex   Register the Codex integration\n  cutdex status          Check authentication and quota\n  cutdex doctor          Check the local integration\n  cutdex bench           Run a local optimizer smoke test\n  cutdex logout          Remove the local credential");
 }
 
 function welcome(): void {
   console.log(`${startupArt()}\n\n`);
   help();
+}
+
+function localBench(): void {
+  const cases: Array<{ label: string; input: OptimizeInput; shouldChange: boolean }> = [
+    { label: "bounded read", input: { task: "Find the five most recent failed orders", tool: { name: "database.query", kind: "READ", readOnly: true }, request: { query: "SELECT * FROM orders" } }, shouldChange: true },
+    { label: "write safety", input: { task: "Delete failed orders", tool: { name: "database.query", kind: "WRITE", readOnly: false }, request: { query: "DELETE FROM orders WHERE status = 'failed'" } }, shouldChange: false },
+    { label: "unsupported shape", input: { task: "Find failed orders", tool: { name: "database.query", kind: "READ", readOnly: true }, request: { query: "SELECT * FROM orders UNION SELECT * FROM archived_orders" } }, shouldChange: false },
+    { label: "already narrow", input: { task: "Find the five most recent failed payments", tool: { name: "database.query", kind: "READ", readOnly: true }, request: { query: "SELECT id, status, total, created_at FROM payments WHERE status = 'failed' ORDER BY created_at DESC LIMIT 5" } }, shouldChange: false },
+  ];
+  const started = performance.now();
+  const results = cases.map((testCase) => ({ ...testCase, result: optimizeToolCall(testCase.input) }));
+  const passed = results.filter(({ shouldChange, result }) => (result.applied.length > 0) === shouldChange).length;
+  const changed = results.filter(({ result }) => result.applied.length > 0).length;
+  const elapsed = (performance.now() - started).toFixed(3);
+  console.log(`Cutdex local smoke benchmark\nCases              ${results.length}\nBehavior checks     ${passed}/${results.length}\nTransforms          ${changed}\nElapsed             ${elapsed} ms\nProvider usage      not measured\n\n${results.map(({ label, result }) => `${result.applied.length > 0 ? "✓" : "·"} ${label} · ${result.safety}`).join("\n")}`);
 }
 
 type RawTrace = { id?: string; variant?: string; mode?: string; task?: string; tool?: { name?: string }; request?: { query?: string }; usage?: unknown; comparison?: { baseline?: unknown; cutdex?: unknown } };
@@ -359,7 +375,7 @@ async function main(): Promise<void> {
   if (command === "connect") { connect(process.argv[3]); return }
   if (command === "disconnect") { disconnect(process.argv[3]); return }
   if (command === "doctor") { await doctor(); return }
-  if (command === "bench") { console.log("Run `pnpm benchmark` from the repository to regenerate benchmark artifacts."); return }
+  if (command === "bench") { localBench(); return }
   if (command === "report") { const report = join(root, "benchmarks/results/latest.md"); console.log(existsSync(report) ? readFileSync(report, "utf8") : "No generated benchmark report found. Run pnpm benchmark."); return }
   if (command === "analyze") { const target = process.argv[3]; if (!target) throw new Error("Provide a JSONL trace path."); analyze(target); return }
   if (command === "compact") { const target = process.argv[3]; if (!target) throw new Error("Provide a JSON result path."); compact(target); return }
